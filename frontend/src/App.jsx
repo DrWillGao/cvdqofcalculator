@@ -3,7 +3,7 @@ import './App.css';
 import Papa from 'papaparse';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const API_BASE_URL = 'http://localhost:3002/api';
+const API_BASE_URL = 'http://localhost:3003/api';
 
 const SimpleQofTool = () => {
   const [csvData, setCsvData] = useState([]);

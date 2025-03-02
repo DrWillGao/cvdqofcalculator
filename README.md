@@ -29,8 +29,8 @@ npm run dev
 ```
 
 This will start:
-- Backend server on http://localhost:3002
-- Frontend development server on http://localhost:5176
+- Backend server on http://localhost:3003
+- Frontend development server on http://localhost:5177
 
 ## Project Structure
 
