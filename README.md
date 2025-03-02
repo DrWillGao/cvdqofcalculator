@@ -14,7 +14,7 @@ A tool for analyzing QOF (Quality and Outcomes Framework) data for GP practices.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/cvdqofcalculator.git
+git clone https://github.com/DrWillGao/cvdqofcalculator.git
 cd cvdqofcalculator
 ```
 
@@ -29,8 +29,8 @@ npm run dev
 ```
 
 This will start:
-- Backend server on http://localhost:3001
-- Frontend development server on http://localhost:5175
+- Backend server on http://localhost:3002
+- Frontend development server on http://localhost:5176
 
 ## Project Structure
 
