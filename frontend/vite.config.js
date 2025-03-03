@@ -37,7 +37,9 @@ export default defineConfig(({ command, mode }) => {
               react: 'React',
               'react-dom': 'ReactDOM'
             },
-            extend: true
+            extend: true,
+            inlineDynamicImports: true,
+            name: 'QofCalculatorLib'
           }
         },
         copyPublicDir: true

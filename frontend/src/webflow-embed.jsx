@@ -2,25 +2,39 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import QofAnalysisTool from './App';
 
-// Create the wrapper component
-const QofCalculator = () => {
-  return (
-    <div className="webflow-container">
-      <QofAnalysisTool />
-    </div>
-  );
-};
-
-// Create a function to initialize the calculator
-function initQofCalculator(elementId) {
-  const container = document.getElementById(elementId);
-  if (container) {
-    ReactDOM.render(React.createElement(QofCalculator), container);
+class QofCalculatorWrapper extends React.Component {
+  render() {
+    return (
+      <div className="webflow-container">
+        <QofAnalysisTool />
+      </div>
+    );
   }
 }
 
-// Expose both the component and init function to window
-window.QofCalculator = QofCalculator;
-window.initQofCalculator = initQofCalculator;
+// Initialize function that will be called from Webflow
+function initQofCalculator(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.error(`Container with id ${containerId} not found`);
+    return;
+  }
+  
+  try {
+    ReactDOM.render(<QofCalculatorWrapper />, container);
+    console.log('QOF Calculator initialized successfully');
+  } catch (error) {
+    console.error('Error initializing QOF Calculator:', error);
+  }
+}
 
-export { QofCalculator, initQofCalculator }; 
+// Ensure we're in a browser environment
+if (typeof window !== 'undefined') {
+  // Expose the initialization function globally
+  window.initQofCalculator = initQofCalculator;
+  
+  // Also expose the component itself
+  window.QofCalculator = QofCalculatorWrapper;
+}
+
+export { QofCalculatorWrapper as QofCalculator, initQofCalculator }; 
