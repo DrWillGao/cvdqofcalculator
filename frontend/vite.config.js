@@ -24,5 +24,6 @@ export default defineConfig({
     },
     copyPublicDir: true
   },
-  publicDir: 'public'
+  publicDir: 'public',
+  assetsInclude: ['**/*.csv']
 }); 
