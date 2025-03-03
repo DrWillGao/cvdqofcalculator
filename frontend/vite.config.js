@@ -26,7 +26,7 @@ export default defineConfig(({ command, mode }) => {
         target: 'es2015',
         lib: {
           entry: 'src/webflow-embed.jsx',
-          name: 'QofCalculator',
+          name: 'QofCalculatorLib',
           formats: ['iife'],
           fileName: 'qof-calculator'
         },
@@ -36,7 +36,8 @@ export default defineConfig(({ command, mode }) => {
             globals: {
               react: 'React',
               'react-dom': 'ReactDOM'
-            }
+            },
+            extend: true
           }
         },
         copyPublicDir: true
