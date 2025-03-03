@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import QofAnalysisTool from './App';
 
 // Create our global namespace
@@ -11,7 +11,7 @@ const QofCalculatorNamespace = {
 class QofCalculatorWrapper extends React.Component {
   render() {
     return (
-      <div className="webflow-container">
+      <div className="qof-calculator-webflow-container" style={{ isolation: 'isolate' }}>
         <QofAnalysisTool />
       </div>
     );
@@ -20,6 +20,18 @@ class QofCalculatorWrapper extends React.Component {
 
 // Initialize function that will be called from Webflow
 function initQofCalculator(containerId) {
+  // Ensure we're in a browser environment
+  if (typeof window === 'undefined' || !document) {
+    console.error('Browser environment not detected');
+    return;
+  }
+
+  // Wait for React and ReactDOM to be available
+  if (!window.React || !window.ReactDOM) {
+    console.error('React or ReactDOM not loaded');
+    return;
+  }
+
   const container = document.getElementById(containerId);
   if (!container) {
     console.error(`Container with id ${containerId} not found`);
@@ -27,8 +39,9 @@ function initQofCalculator(containerId) {
   }
   
   try {
-    ReactDOM.render(<QofCalculatorWrapper />, container);
-    console.log('QOF Calculator initialized successfully');
+    const root = createRoot(container);
+    root.render(<QofCalculatorWrapper />);
+    console.log('QOF Calculator initialized successfully with React 18');
   } catch (error) {
     console.error('Error initializing QOF Calculator:', error);
   }
@@ -49,10 +62,21 @@ const initialize = () => {
   window.initQofCalculator = initQofCalculator;
   window.QofCalculator = QofCalculatorWrapper;
   
+  // Add a ready state flag
+  window.QofCalculatorNamespace.isReady = true;
+  
+  // Dispatch a custom event when ready
+  const readyEvent = new CustomEvent('qofCalculatorReady');
+  window.dispatchEvent(readyEvent);
+  
   console.log('QOF Calculator library loaded successfully');
 };
 
-// Run initialization
-initialize();
+// Run initialization when the script loads
+if (document.readyState === 'complete') {
+  initialize();
+} else {
+  window.addEventListener('load', initialize);
+}
 
 export { QofCalculatorWrapper as QofCalculator, initQofCalculator }; 
