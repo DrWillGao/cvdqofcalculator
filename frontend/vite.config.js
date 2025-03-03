@@ -25,7 +25,7 @@ export default defineConfig(({ command, mode }) => {
         minify: 'terser',
         target: 'es2015',
         lib: {
-          entry: 'src/webflow-embed.js',
+          entry: 'src/webflow-embed.jsx',
           name: 'QofCalculator',
           formats: ['iife'],
           fileName: 'qof-calculator'
