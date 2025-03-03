@@ -606,9 +606,9 @@ const QofAnalysisTool = () => {
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="bg-[#f8f3f0] p-6 rounded-lg shadow-lg mb-8">
-        <h1 className="text-2xl font-bold text-black mb-4">QOF Cardiovascular Indicator Analysis Tool</h1>
+        <h1 className="text-2xl font-bold text-black mb-4">2025/26 Cardiovascular QOF Indicator Analysis Tool</h1>
         <p className="text-black mb-4">
-          Based on the 2025/26 GP contract changes, there are some key changes to QOF targets. Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact you for your CVD indicators, and outline where there is room for opportunity
+          Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact you for your CVD indicators, and outline where there is room for opportunity
         </p>
         
           <div className="relative">
