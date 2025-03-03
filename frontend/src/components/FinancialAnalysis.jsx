@@ -411,35 +411,74 @@ const FinancialAnalysis = ({ selectedPractice }) => {
 
   const totalEarnings = calculateTotalEarnings();
 
+  // Define chartData for the main chart
+  const mainChartData = [
+    {
+      name: 'CHOL003',
+      'Earnings 2023/24': parseCurrency(data.CHOL.indicator1.earnings2324),
+      'Earnings 2025/26': parseCurrency(data.CHOL.indicator1.earnings2526),
+      'Full Target': parseCurrency(data.CHOL.indicator1.fullTarget),
+      'Prevalence': parseCurrency(data.CHOL.indicator1[`prevalence${prevalence}`])
+    },
+    {
+      name: 'CHOL004',
+      'Earnings 2023/24': parseCurrency(data.CHOL.indicator2.earnings2324),
+      'Earnings 2025/26': parseCurrency(data.CHOL.indicator2.earnings2526),
+      'Full Target': parseCurrency(data.CHOL.indicator2.fullTarget),
+      'Prevalence': parseCurrency(data.CHOL.indicator2[`prevalence${prevalence}`])
+    }
+  ];
+
   return (
     <div className="w-full p-6 bg-white">
-      <div className="flex flex-col items-center mb-8 bg-[#f8f3f0] p-6 rounded-lg">
-        <div className="flex flex-col items-center space-y-6 w-full max-w-2xl">
-          <h2 className="text-2xl font-bold text-black mb-2">How the contract changes impact your CVD indicators</h2>
-          <div className="text-base text-black space-y-3 w-full tracking-wide">
-            <p className="text-base"><span className="font-semibold">Earnings 2023/24</span> = What your practice earned last year</p>
-            <p className="text-base"><span className="font-semibold">Earnings 2025/26</span> = What your practice will earn next year if you perform the same as last year</p>
-            <p className="text-base"><span className="font-semibold">Full Target</span> = What you could earn next year if you hit the maximum thresholds</p>
-          </div>
-          <div className="w-full pt-6 border-t border-gray-300">
-            <span className="text-xl font-medium text-black">Disease Prevalence: {prevalence}%</span>
-            <div className="w-full flex items-center space-x-4 mt-3">
-              <span className="text-base text-black">1%</span>
-              <input
-                type="range"
-                min="1"
-                max="3"
-                step="1"
-                value={prevalence}
-                onChange={(e) => setPrevalence(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                title="See what you could earn with an increase in disease prevalence"
-              />
-              <span className="text-base text-black">3%</span>
+      <div className="bg-[#f8f3f0] p-6 rounded-lg mb-6">
+        <div className="flex justify-between items-start gap-8">
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">How the contract changes impact your CVD indicators</h2>
+            <div className="space-y-2">
+              <p><span className="font-medium">Earnings 2023/24</span> = What your practice earned last year</p>
+              <p><span className="font-medium">Earnings 2025/26</span> = What your practice will earn next year if you perform the same as last year</p>
+              <p><span className="font-medium">Full Target</span> = What you could earn next year if you hit the maximum thresholds</p>
             </div>
-            <span className="block text-base text-black/70 italic mt-3">
-              Adjust the slider to see potential earnings with increased disease prevalence
-            </span>
+          </div>
+
+          <div className="w-[300px] flex-shrink-0">
+            <h3 className="text-lg font-medium mb-4">See what you could earn with increased disease prevalence?</h3>
+            <button
+              onClick={() => setPrevalence(prevalence === 1 ? 0 : 1)}
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                prevalence > 0 
+                  ? 'bg-[#a43400] text-white hover:bg-[#8a2b00]' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {prevalence > 0 ? 'Yes' : 'No'}
+            </button>
+
+            {prevalence > 0 && (
+              <div className="mt-6">
+                <div className="text-sm font-medium mb-2">Disease Prevalence: {prevalence}%</div>
+                <div className="w-full">
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="1"
+                    value={prevalence}
+                    onChange={(e) => setPrevalence(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-gray-500">1%</span>
+                    <span className="text-xs text-gray-500">2%</span>
+                    <span className="text-xs text-gray-500">3%</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 italic mt-2">
+                  Adjust the slider to see potential earnings with increased disease prevalence
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

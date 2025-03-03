@@ -12,7 +12,9 @@ const QofAnalysisTool = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [cholPrevalence, setCholPrevalence] = useState(0);
+  const [cholPrevalence, setCholPrevalence] = useState(1);
+  const [showPrevalence, setShowPrevalence] = useState(false);
+  const searchInputRef = React.useRef(null);
 
   // Load data
   useEffect(() => {
@@ -409,74 +411,105 @@ const QofAnalysisTool = () => {
 
       return (
         <div key={diseaseArea} className="bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">CHOL003 & CHOL004 Earnings by Disease Prevalence</h2>
-          
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Disease Prevalence Increase: {cholPrevalence}%</span>
-                <span className="text-sm font-medium">Combined Earnings: {formatCurrency(combinedEarnings)}</span>
-              </div>
-              <div className="flex justify-center">
-                <div className="w-1/2">
-                  <Slider
-                    defaultValue={[0]}
-                    max={3}
-                    min={0}
-                    step={0.25}
-                    value={[cholPrevalence]}
-                    onValueChange={(value) => setCholPrevalence(value[0])}
-                  />
+          <div className="flex justify-between items-start gap-8">
+            <div className="flex-1">
+              <div className="bg-[#f8f3f0] p-6 rounded-lg mb-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">How the contract changes impact your CVD indicators</h2>
+                <div className="space-y-2">
+                  <p><span className="font-medium">Earnings 2023/24</span> = What your practice earned last year</p>
+                  <p><span className="font-medium">Earnings 2025/26</span> = What your practice will earn next year if you perform the same as last year</p>
+                  <p><span className="font-medium">Full Target</span> = What you could earn next year if you hit the maximum thresholds</p>
                 </div>
               </div>
+
+              <h2 className="text-xl font-bold text-gray-800 mb-6">Cholesterol Indicators</h2>
+              {showPrevalence && (
+                <>
+                  <div className="h-64 mb-8">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={comparisonData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(value) => `£${(value / 1000).toFixed(1)}k`} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Bar dataKey="CHOL003" stackId="a" name="CHOL003" fill="#3b82f6" />
+                        <Bar dataKey="CHOL004" stackId="a" name="CHOL004" fill="#10b981" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2">INDICATOR</th>
+                          <th className="text-right py-2">23/24</th>
+                          <th className="text-right py-2">25/26</th>
+                          <th className="text-right py-2">TARGET</th>
+                          <th className="text-right py-2">1%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detailedTableData.map((row) => (
+                          <tr key={row.label} className="border-b">
+                            <td className="py-2 font-medium">{row.label}</td>
+                            <td className="text-right py-2">{formatCurrency(row.earnings2023)}</td>
+                            <td className="text-right py-2">{formatCurrency(row.earnings2025Base)}</td>
+                            <td className="text-right py-2">{formatCurrency(row.earningsWithPrevalence)}</td>
+                            <td className="text-right py-2">{formatCurrency(row.earningsWithPrevalence * 1.01)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={comparisonData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            <div className="w-[300px] flex-shrink-0">
+              <div className="bg-[#f8f3f0] p-4 rounded-lg">
+                <h3 className="text-lg font-medium mb-4">See what you could earn with increased disease prevalence?</h3>
+                <button
+                  onClick={() => {
+                    setShowPrevalence(!showPrevalence);
+                    if (!showPrevalence) {
+                      setCholPrevalence(1);
+                    }
+                  }}
+                  className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                    showPrevalence 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tickFormatter={(value) => value.length > 20 ? value.substring(0, 20) + '...' : value} />
-                  <YAxis
-                    tickFormatter={(value) => `£${(value / 1000).toFixed(1)}k`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <Bar dataKey="CHOL003" stackId="a" name="CHOL003" fill="#3b82f6" />
-                  <Bar dataKey="CHOL004" stackId="a" name="CHOL004" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                  {showPrevalence ? 'Yes' : 'No'}
+                </button>
 
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">Detailed Earnings Comparison</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2">Indicator</th>
-                      <th className="text-right py-2">Earnings in 2023/24</th>
-                      <th className="text-right py-2">Est. earnings with same achievement</th>
-                      <th className="text-right py-2">% Increase</th>
-                      <th className="text-right py-2">With {cholPrevalence}% prevalence</th>
-                      <th className="text-right py-2">% Increase from base</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detailedTableData.map((row) => (
-                      <tr key={row.label} className="border-b">
-                        <td className="py-2 font-medium">{row.label}</td>
-                        <td className="text-right py-2">{formatCurrency(row.earnings2023)}</td>
-                        <td className="text-right py-2">{formatCurrency(row.earnings2025Base)}</td>
-                        <td className="text-right py-2">{formatPercent(row.percentIncrease2023to2025)}</td>
-                        <td className="text-right py-2">{formatCurrency(row.earningsWithPrevalence)}</td>
-                        <td className="text-right py-2">{formatPercent(row.percentIncreaseWithPrevalence)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {showPrevalence && (
+                  <div className="mt-6">
+                    <div className="text-sm font-medium mb-2">Disease Prevalence: {cholPrevalence}%</div>
+                    <div className="w-full">
+                      <Slider
+                        defaultValue={[1]}
+                        max={3}
+                        min={1}
+                        step={1}
+                        value={[cholPrevalence]}
+                        onValueChange={(value) => setCholPrevalence(value[0])}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between mt-1">
+                        <span className="text-xs text-gray-500">1%</span>
+                        <span className="text-xs text-gray-500">2%</span>
+                        <span className="text-xs text-gray-500">3%</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 italic mt-2">
+                      Adjust the slider to see potential earnings with increased disease prevalence
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -575,15 +608,17 @@ const QofAnalysisTool = () => {
       <div className="bg-[#f8f3f0] p-6 rounded-lg shadow-lg mb-8">
         <h1 className="text-2xl font-bold text-black mb-4">QOF Cardiovascular Indicator Analysis Tool</h1>
         <p className="text-black mb-4">
-          Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact you for your CVD indicators, and outline where there is room for opportunity
+          Based on the 2025/26 GP contract changes, there are some key changes to QOF targets. Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact you for your CVD indicators, and outline where there is room for opportunity
         </p>
         
           <div className="relative">
             <input
+              ref={searchInputRef}
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by practice name, ODS code, or postcode..."
+              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+              placeholder="Search by practice name, ODS code, or postcode..."
               className="w-full p-4 rounded-lg border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
             />
             
@@ -591,18 +626,19 @@ const QofAnalysisTool = () => {
               <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg max-h-80 overflow-y-auto">
                 {searchResults.map((practice) => (
                   <div
-                  key={practice.PRACTICE_CODE}
-                  className="p-3 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setSelectedPractice(practice);
-                    setSearchTerm(practice.PRACTICE_NAME);
-                    setShowDropdown(false);
-                  }}
-                >
-                  <div className="font-medium">{practice.PRACTICE_NAME}</div>
+                    key={practice.PRACTICE_CODE}
+                    className="p-3 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setSelectedPractice(practice);
+                      setSearchTerm(practice.PRACTICE_NAME);
+                      setShowDropdown(false);
+                      searchInputRef.current?.blur();
+                    }}
+                  >
+                    <div className="font-medium">{practice.PRACTICE_NAME}</div>
                     <div className="text-sm text-gray-600">
-                    {practice.PRACTICE_CODE} | {practice.POST_CODE}
-                  </div>
+                      {practice.PRACTICE_CODE} | {practice.POST_CODE}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -621,56 +657,58 @@ const QofAnalysisTool = () => {
             <p className="text-gray-600">List Size: {selectedPractice['Practice List Size']}</p>
           </div>
           
-          {/* Prevalence Chart */}
+          {/* Disease Prevalence and Chart Section */}
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Disease Prevalence Comparison</h2>
-            <ResponsiveContainer width="90%" height={400}>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold mb-4">Disease Prevalence Comparison</h2>
+              <ResponsiveContainer width="100%" height={400}>
                 <BarChart
-                data={getPrevalenceData(selectedPractice)}
+                  data={getPrevalenceData(selectedPractice)}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="name" 
-                  angle={0}
-                  height={50}
-                />
-                <YAxis 
-                  tickFormatter={(value) => `${value}%`}
-                  label={{ value: 'Prevalence %', angle: -90, position: 'insideLeft', offset: 0 }}
-                  domain={[0, 16]}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${value.toFixed(1)}%`, 'Prevalence']}
-                  labelStyle={{ fontWeight: 'bold' }}
-                />
-                <Legend 
-                  verticalAlign="top" 
-                  height={36}
-                />
-                <Bar 
-                  dataKey="Practice" 
-                  name="Your Practice" 
-                  fill="#7e22ce"
-                  radius={[4, 4, 0, 0]}
-                  barSize={35}
-                />
-                <Bar 
-                  dataKey="SubICB" 
-                  name="Sub ICB Average" 
-                  fill="#1d4ed8"
-                  radius={[4, 4, 0, 0]}
-                  barSize={35}
-                />
-                <Bar 
-                  dataKey="National" 
-                  name="National Average" 
-                  fill="#047857"
-                  radius={[4, 4, 0, 0]}
-                  barSize={35}
-                />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={0}
+                    height={50}
+                  />
+                  <YAxis 
+                    tickFormatter={(value) => `${value}%`}
+                    label={{ value: 'Prevalence %', angle: -90, position: 'insideLeft', offset: 0 }}
+                    domain={[0, 16]}
+                  />
+                  <Tooltip 
+                    formatter={(value) => [`${value.toFixed(1)}%`, 'Prevalence']}
+                    labelStyle={{ fontWeight: 'bold' }}
+                  />
+                  <Legend 
+                    verticalAlign="top" 
+                    height={36}
+                  />
+                  <Bar 
+                    dataKey="Practice" 
+                    name="Your Practice" 
+                    fill="#7e22ce"
+                    radius={[4, 4, 0, 0]}
+                    barSize={35}
+                  />
+                  <Bar 
+                    dataKey="SubICB" 
+                    name="Sub Icb Average" 
+                    fill="#1d4ed8"
+                    radius={[4, 4, 0, 0]}
+                    barSize={35}
+                  />
+                  <Bar 
+                    dataKey="National" 
+                    name="National Average" 
+                    fill="#047857"
+                    radius={[4, 4, 0, 0]}
+                    barSize={35}
+                  />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
           </div>
           
           {/* Financial Analysis */}
