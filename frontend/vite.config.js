@@ -14,11 +14,18 @@ export default defineConfig({
     sourcemap: true,
     minify: 'terser',
     target: 'es2015',
+    lib: {
+      entry: 'src/webflow-embed.js',
+      name: 'QofCalculator',
+      formats: ['iife'],
+      fileName: 'qof-calculator'
+    },
     rollupOptions: {
+      external: ['react', 'react-dom'],
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'recharts'],
-          utils: ['papaparse', 'clsx', 'class-variance-authority']
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM'
         }
       }
     },
