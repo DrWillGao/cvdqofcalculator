@@ -1,21 +1,21 @@
 {
+  "version": 2,
   "framework": "vite",
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "cd frontend && npm install",
-  "rewrites": [
+  "installCommand": null,
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "builds": [
+      "src": "^/assets/(.*)",
+      "dest": "/assets/$1"
+    },
     {
-      "src": "frontend",
-      "use": "@vercel/static-build"
+      "src": "^/.*",
+      "dest": "/index.html"
     }
   ],
   "env": {
-    "NODE_VERSION": "18.x"
+    "NODE_VERSION": "18.x",
+    "NPM_FLAGS": "--legacy-peer-deps"
   }
 } 
