@@ -39,7 +39,9 @@ export default defineConfig(({ command, mode }) => {
             },
             extend: true,
             inlineDynamicImports: true,
-            name: 'QofCalculatorLib'
+            name: 'QofCalculatorLib',
+            format: 'iife',
+            exports: 'named'
           }
         },
         copyPublicDir: true

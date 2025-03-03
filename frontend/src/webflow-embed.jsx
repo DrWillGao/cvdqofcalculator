@@ -2,6 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import QofAnalysisTool from './App';
 
+// Create our global namespace
+const QofCalculatorNamespace = {
+  init: null,
+  Component: null
+};
+
 class QofCalculatorWrapper extends React.Component {
   render() {
     return (
@@ -28,13 +34,25 @@ function initQofCalculator(containerId) {
   }
 }
 
-// Ensure we're in a browser environment
-if (typeof window !== 'undefined') {
-  // Expose the initialization function globally
-  window.initQofCalculator = initQofCalculator;
+// Create initialization function
+const initialize = () => {
+  if (typeof window === 'undefined') return;
+
+  // Create global namespace if it doesn't exist
+  window.QofCalculatorNamespace = window.QofCalculatorNamespace || {};
   
-  // Also expose the component itself
+  // Assign our functions and components
+  window.QofCalculatorNamespace.init = initQofCalculator;
+  window.QofCalculatorNamespace.Component = QofCalculatorWrapper;
+  
+  // Also expose directly on window for backwards compatibility
+  window.initQofCalculator = initQofCalculator;
   window.QofCalculator = QofCalculatorWrapper;
-}
+  
+  console.log('QOF Calculator library loaded successfully');
+};
+
+// Run initialization
+initialize();
 
 export { QofCalculatorWrapper as QofCalculator, initQofCalculator }; 
