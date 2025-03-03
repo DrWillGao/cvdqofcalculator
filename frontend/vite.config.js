@@ -21,6 +21,8 @@ export default defineConfig({
           utils: ['papaparse', 'clsx', 'class-variance-authority']
         }
       }
-    }
-  }
+    },
+    copyPublicDir: true
+  },
+  publicDir: 'public'
 }); 

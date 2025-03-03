@@ -23,10 +23,12 @@ const QofAnalysisTool = () => {
         const response = await fetch('/data/qof_data.csv');
         
         if (!response.ok) {
+          console.error('Failed to fetch CSV:', response.status, response.statusText);
           throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
         }
         
         const text = await response.text();
+        console.log('CSV data received, first 100 chars:', text.substring(0, 100));
         
         Papa.parse(text, {
           header: true,
@@ -34,17 +36,13 @@ const QofAnalysisTool = () => {
           skipEmptyLines: true,
           complete: (results) => {
             if (results.data && results.data.length > 0) {
-              // Log the first row of actual data to help debug
+              console.log('CSV parsing complete');
               console.log('First row of data:', results.data[0]);
               console.log('Number of rows:', results.data.length);
-              console.log('Sample financial data:', {
-                chol003: results.data[0]['Earnings in 2023/24 CHOL003'],
-                chol004: results.data[0]['Earnings in 2023/24 CHOL003_1'],
-                hyp008: results.data[0]['Earnings in 2023/24 HYP008'],
-                hyp009: results.data[0]['Earnings in 2023/24 HYP008_1']
-              });
+              console.log('Available columns:', Object.keys(results.data[0]));
               setPracticeData(results.data);
             } else {
+              console.error('No data found in CSV file');
               setError('No data found in CSV file');
             }
             setIsLoading(false);
