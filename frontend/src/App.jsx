@@ -201,6 +201,8 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
   const [showPrevalence, setShowPrevalence] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const searchInputRef = React.useRef(null);
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [showCopySuccess, setShowCopySuccess] = useState(false);
 
   const handleViewResults = async () => {
     if (!isAuthenticated) {
@@ -942,12 +944,63 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
             <p className="mb-6">
               Suvera is an award-winning CQC proactive healthcare service that helps Practices and PCNs achieve QOF targets. We support both with a clinical service and coding software to enhance practice income. See how we've helped organisations similar to yourselves and get in touch to see how we can improve your outcomes.
             </p>
-            <button 
-              onClick={() => window.location.href = 'mailto:sales@suvera.co.uk'}
-              className="bg-[#a43400] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#a43400] transition-colors"
-            >
-              Speak to Partnerships
-            </button>
+            <div className="flex gap-4 items-center">
+              <button 
+                onClick={() => window.location.href = 'mailto:sales@suvera.co.uk'}
+                className="bg-[#a43400] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#a43400] transition-colors"
+              >
+                Speak to Partnerships
+              </button>
+              
+              <div className="relative inline-block">
+                <button
+                  onClick={() => setShowShareOptions(prev => !prev)}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <span>Share with Colleague</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                {showShareOptions && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.href);
+                          setShowCopySuccess(true);
+                          setTimeout(() => setShowCopySuccess(false), 2000);
+                          setShowShareOptions(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        role="menuitem"
+                      >
+                        Copy Link
+                      </button>
+                      <button
+                        onClick={() => {
+                          const subject = encodeURIComponent('QOF Analysis Tool Results');
+                          const body = encodeURIComponent(`Check out these QOF analysis results: ${window.location.href}`);
+                          window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                          setShowShareOptions(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        role="menuitem"
+                      >
+                        Email Link
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {showCopySuccess && (
+                <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
+                  Link copied successfully!
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
