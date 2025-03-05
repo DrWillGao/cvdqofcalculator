@@ -8,9 +8,21 @@ export default defineConfig(({ command, mode }) => {
     plugins: [react()],
     server: {
       port: 3000,
-      strictPort: true
+      strictPort: true,
+      proxy: {
+        '/data': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          secure: false
+        },
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          secure: false
+        }
+      }
     },
-    base: './',
+    base: '/',
     publicDir: 'public',
     assetsInclude: ['**/*.csv']
   };
@@ -26,22 +38,29 @@ export default defineConfig(({ command, mode }) => {
         target: 'es2015',
         lib: {
           entry: 'src/webflow-embed.jsx',
-          name: 'QofCalculatorLib',
+          name: 'QofCalculatorNamespace',
           formats: ['iife'],
-          fileName: 'qof-calculator'
+          fileName: (format) => `qof-calculator.${format}.js`
         },
         rollupOptions: {
-          external: ['react', 'react-dom'],
+          external: ['react', 'react-dom', 'prop-types'],
           output: {
             globals: {
               react: 'React',
-              'react-dom': 'ReactDOM'
+              'react-dom': 'ReactDOM',
+              'prop-types': 'PropTypes'
             },
             extend: true,
             inlineDynamicImports: true,
-            name: 'QofCalculatorLib',
+            name: 'QofCalculatorNamespace',
             format: 'iife',
-            exports: 'named'
+            exports: 'named',
+            assetFileNames: (assetInfo) => {
+              if (assetInfo.name.endsWith('.js')) {
+                return 'qof-calculator.iife.js';
+              }
+              return `assets/[name]-[hash][extname]`;
+            }
           }
         },
         copyPublicDir: true

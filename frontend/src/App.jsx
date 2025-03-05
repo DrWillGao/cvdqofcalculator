@@ -3,18 +3,212 @@ import Papa from 'papaparse';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from './components/ui/slider';
 import FinancialAnalysis from './components/FinancialAnalysis';
+import { useAuth, useMemberstack } from "@memberstack/react";
 
-const QofAnalysisTool = () => {
+const App = () => {
+  const { isLoggedIn, member } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Set loading to false once we have auth state
+    setIsLoading(false);
+  }, [isLoggedIn]);
+
+  return (
+    <QofAnalysisTool isAuthenticated={isLoggedIn} />
+  );
+};
+
+const PasswordlessForm = ({ onSuccess }) => {
+  const memberstack = useMemberstack();
+  const { isLoading: authLoading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isEmailSent, setIsEmailSent] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isLoading) {
+      console.log('Early return:', { isLoading });
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      if (!email || !email.includes('@')) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      console.log('Sending passwordless email to:', email);
+      const response = await memberstack.sendMemberLoginPasswordlessEmail({
+        email,
+        redirectUrl: `${window.location.origin}${window.location.pathname}`,
+        createMemberIfNotExists: true,
+        plans: [{
+          planId: "pln_free-trial-c8zqm9xj3",
+          type: "DEFAULT"
+        }]
+      });
+      
+      console.log('Passwordless email response:', response);
+      setIsEmailSent(true);
+      setVerificationCode('');
+    } catch (err) {
+      console.error('Login error details:', {
+        message: err.message,
+        error: err,
+        stack: err.stack
+      });
+      setError(err.message || "Couldn't send login email. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerificationSubmit = async (e) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      console.log('Submitting verification code:', verificationCode);
+      await memberstack.loginMemberPasswordless({
+        passwordlessToken: verificationCode,
+        email: email
+      });
+      console.log('Successfully processed passwordless login');
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      console.error('Verification error:', err);
+      setError('Invalid verification code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-8 rounded-lg shadow-lg max-w-md mx-auto">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Access Your Practice Results</h2>
+      <p className="text-gray-600 mb-6">
+        {!isEmailSent 
+          ? "Enter your email address below and we'll send you a secure login link to view your practice results."
+          : "Please enter the verification code sent to your email."}
+      </p>
+      
+      <form onSubmit={isEmailSent ? handleVerificationSubmit : handleSubmit} className="space-y-6">
+        {!isEmailSent ? (
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError('');
+              }}
+              className={`w-full p-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+              placeholder="Enter your work email"
+              disabled={isLoading || authLoading}
+              required
+            />
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-2">
+              Verification Code
+            </label>
+            <input
+              type="text"
+              id="verificationCode"
+              value={verificationCode}
+              onChange={(e) => {
+                setVerificationCode(e.target.value);
+                setError('');
+              }}
+              className={`w-full p-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+              placeholder="Enter verification code"
+              disabled={isLoading || authLoading}
+              required
+            />
+          </div>
+        )}
+        
+        {error && (
+          <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+            {error}
+          </div>
+        )}
+        
+        <button
+          type="submit"
+          disabled={isLoading || authLoading}
+          className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-colors ${
+            isLoading || authLoading
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
+        >
+          {isLoading || authLoading
+            ? 'Processing...'
+            : isEmailSent
+            ? 'Verify Code'
+            : 'Send Login Link'}
+        </button>
+        
+        {isEmailSent && (
+          <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-lg">
+            <p className="font-medium mb-2">Verification code sent!</p>
+            <p className="text-sm">
+              Please check your email for the verification code. If you don't see it, please check your spam folder.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsEmailSent(false);
+                setError('');
+              }}
+              className="text-blue-600 hover:text-blue-800 text-sm mt-2"
+            >
+              ← Back to email input
+            </button>
+          </div>
+        )}
+      </form>
+    </div>
+  );
+};
+
+const QofAnalysisTool = ({ isAuthenticated }) => {
+  const { auth } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPractice, setSelectedPractice] = useState(null);
+  const [showResults, setShowResults] = useState(false);
   const [practiceData, setPracticeData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [cholPrevalence, setCholPrevalence] = useState(1);
   const [showPrevalence, setShowPrevalence] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
   const searchInputRef = React.useRef(null);
+
+  const handleViewResults = async () => {
+    if (!isAuthenticated) {
+      setShowLoginForm(true);
+      return;
+    }
+    setShowResults(true);
+  };
 
   // Load data
   useEffect(() => {
@@ -611,42 +805,70 @@ const QofAnalysisTool = () => {
           Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact you for your CVD indicators, and outline where there is room for opportunity
         </p>
         
-          <div className="relative">
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-              placeholder="Search by practice name, ODS code, or postcode..."
-              className="w-full p-4 rounded-lg border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
-            />
-            
-            {showDropdown && (
-              <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg max-h-80 overflow-y-auto">
-                {searchResults.map((practice) => (
-                  <div
-                    key={practice.PRACTICE_CODE}
-                    className="p-3 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
-                      setSelectedPractice(practice);
-                      setSearchTerm(practice.PRACTICE_NAME);
-                      setShowDropdown(false);
-                      searchInputRef.current?.blur();
-                    }}
-                  >
-                    <div className="font-medium">{practice.PRACTICE_NAME}</div>
-                    <div className="text-sm text-gray-600">
-                      {practice.PRACTICE_CODE} | {practice.POST_CODE}
-                    </div>
+        <div className="relative">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+            placeholder="Search by practice name, ODS code, or postcode..."
+            className="w-full p-4 rounded-lg border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
+          />
+          
+          {showDropdown && (
+            <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg max-h-80 overflow-y-auto">
+              {searchResults.map((practice) => (
+                <div
+                  key={practice.PRACTICE_CODE}
+                  className="p-3 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setSelectedPractice(practice);
+                    setSearchTerm(practice.PRACTICE_NAME);
+                    setShowDropdown(false);
+                    setShowResults(false); // Reset results view when new practice is selected
+                    searchInputRef.current?.blur();
+                  }}
+                >
+                  <div className="font-medium">{practice.PRACTICE_NAME}</div>
+                  <div className="text-sm text-gray-600">
+                    {practice.PRACTICE_CODE} | {practice.POST_CODE}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {selectedPractice && (
+      {selectedPractice && !showResults && !showLoginForm && (
+        <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+          <h2 className="text-2xl font-bold mb-4">{selectedPractice.PRACTICE_NAME}</h2>
+          <div className="space-y-2 mb-6">
+            <p className="text-gray-600">Practice Code: {selectedPractice.PRACTICE_CODE}</p>
+            <p className="text-gray-600">ICB: {selectedPractice.ICB_NAME} ({selectedPractice.ICB_ODS_CODE})</p>
+            <p className="text-gray-600">PCN: {selectedPractice.PCN_NAME} ({selectedPractice.PCN_ODS_CODE})</p>
+            <p className="text-gray-600">List Size: {selectedPractice['Practice List Size']?.toLocaleString()}</p>
+          </div>
+          <button
+            onClick={handleViewResults}
+            className="bg-blue-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-blue-700 transition-colors w-full sm:w-auto"
+          >
+            View your practice results now!
+          </button>
+        </div>
+      )}
+
+      {showLoginForm && !showResults && (
+        <PasswordlessForm
+          onSuccess={() => {
+            setShowLoginForm(false);
+            setShowResults(true);
+          }}
+        />
+      )}
+
+      {selectedPractice && showResults && isAuthenticated && (
         <div className="space-y-8">
           {/* Practice Details */}
           <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -733,4 +955,4 @@ const QofAnalysisTool = () => {
   );
 };
 
-export default QofAnalysisTool;
+export default App;

@@ -7,7 +7,8 @@
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "vercel-build": "vite build"
+    "vercel-build": "vite build",
+    "build": "vite build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
@@ -25,6 +26,7 @@
     "papaparse": "^5.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "recharts": "^2.12.0"
+    "recharts": "^2.12.0",
+    "prop-types": "^15.8.1"
   }
 }

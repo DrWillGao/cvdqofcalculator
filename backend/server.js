@@ -11,7 +11,15 @@ const __dirname = dirname(__filename);
 const app = express();
 const port = process.env.PORT || 8080;
 
-app.use(cors());
+// Enable CORS for all routes
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Serve static files from the data directory
+app.use('/data', express.static(join(__dirname, 'data')));
 app.use(express.json());
 
 // Cache for storing parsed CSV data
