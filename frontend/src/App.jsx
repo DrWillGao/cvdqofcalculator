@@ -93,8 +93,8 @@ const PasswordlessForm = ({ onSuccess }) => {
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg max-w-md mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Access Your Practice Results</h2>
+    <div className=" p-8 rounded-lg shadow-lg max-w-md mx-auto bg-white border border-[#D7D1CC]">
+      <h2 className="text-2xl text-gray-800 mb-6">Access your practice results</h2>
       <p className="text-gray-600 mb-6">
         {!isEmailSent 
           ? "Enter your email address below and we'll send you a secure login link to view your practice results."
@@ -370,7 +370,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
     if (!indicator) return null;
 
     return (
-      <div key={indicator.code} className="bg-white p-4 rounded-lg shadow-md">
+      <div key={indicator.code} className=" p-4 rounded-lg shadow-md">
         <h3 className="font-semibold text-gray-700 mb-2">{indicator.name}</h3>
         <div className="mb-3">
           <p className="text-sm text-gray-600">Achievement: {indicator.achievement ? `${indicator.achievement}%` : 'N/A'}</p>
@@ -587,7 +587,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
           return (
-            <div className="bg-white p-4 border rounded shadow">
+            <div className=" p-4 border rounded shadow">
               <p className="font-semibold">{label}</p>
               {payload.map((entry, index) => (
                 <p key={index} style={{ color: entry.color }}>
@@ -606,11 +606,11 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       };
 
       return (
-        <div key={diseaseArea} className="bg-white p-6 rounded-lg shadow-lg">
+        <div key={diseaseArea} className=" p-6 rounded-lg shadow-lg">
           <div className="flex justify-between items-start gap-8">
             <div className="flex-1">
               <div className="bg-[#f8f3f0] p-6 rounded-lg mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">How the contract changes impact your CVD indicators</h2>
+                <h2 className="text-xl text-gray-800 mb-4">How the contract changes impact your CVD indicators</h2>
                 <div className="space-y-2">
                   <p><span className="font-medium">Earnings 2023/24</span> = What your practice earned last year</p>
                   <p><span className="font-medium">Earnings 2025/26</span> = What your practice will earn next year if you perform the same as last year</p>
@@ -618,7 +618,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                 </div>
               </div>
 
-              <h2 className="text-xl font-bold text-gray-800 mb-6">Cholesterol Indicators</h2>
+              <h2 className="text-xl text-gray-800 mb-6">Cholesterol Indicators</h2>
               {showPrevalence && (
                 <>
                   <div className="h-64 mb-8">
@@ -685,6 +685,9 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                 {showPrevalence && (
                   <div className="mt-6">
                     <div className="text-sm font-medium mb-2">Disease Prevalence: {cholPrevalence}%</div>
+                    <p className="text-xs text-gray-500 italic mt-2">
+                      Adjust the slider to see potential earnings with increased disease prevalence
+                    </p>
                     <div className="w-full">
                       <Slider
                         defaultValue={[1]}
@@ -701,9 +704,6 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                         <span className="text-xs text-gray-500">3%</span>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 italic mt-2">
-                      Adjust the slider to see potential earnings with increased disease prevalence
-                    </p>
                   </div>
                 )}
               </div>
@@ -715,8 +715,8 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
 
     // Default rendering for other disease areas
     return (
-      <div key={diseaseArea} className="bg-white p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">{diseaseArea}</h2>
+      <div key={diseaseArea} className=" p-6 rounded-lg shadow-lg">
+        <h2 className="text-xl text-gray-800 mb-4">{diseaseArea}</h2>
         
         {/* 2023/24 Estimated Earnings */}
         <div className="mb-6">
@@ -802,7 +802,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="bg-[#f8f3f0] p-6 rounded-lg shadow-lg mb-8">
-        <h1 className="text-2xl font-bold text-black mb-4">2025/26 Cardiovascular QOF Indicator Analysis Tool</h1>
+        <h1 className="text-2xl text-black mb-4">2025/26 Cardiovascular QOF Indicator Analysis Tool</h1>
         <p className="text-black mb-4">
           Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact you for your CVD indicators, and outline where there is room for opportunity
         </p>
@@ -844,9 +844,9 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       </div>
 
       {selectedPractice && !showResults && !showLoginForm && (
-        <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
-          <h2 className="text-2xl font-bold mb-4">{selectedPractice.PRACTICE_NAME}</h2>
-          <div className="space-y-2 mb-6">
+        <div className="bg-white p-6 rounded-lg shadow-lg mb-8 border border-[#D7D1CC]">
+          <h2 className="text-2xl mb-4">{selectedPractice.PRACTICE_NAME}</h2>
+          <div className="space-y-2 mb-6 details">
             <p className="text-gray-600">Practice Code: {selectedPractice.PRACTICE_CODE}</p>
             <p className="text-gray-600">ICB: {selectedPractice.ICB_NAME} ({selectedPractice.ICB_ODS_CODE})</p>
             <p className="text-gray-600">PCN: {selectedPractice.PCN_NAME} ({selectedPractice.PCN_ODS_CODE})</p>
@@ -873,18 +873,20 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       {selectedPractice && showResults && isAuthenticated && (
         <div className="space-y-8">
           {/* Practice Details */}
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">{selectedPractice.PRACTICE_NAME}</h2>
-            <p className="text-gray-600">Practice Code: {selectedPractice.PRACTICE_CODE}</p>
-            <p className="text-gray-600">ICB: {selectedPractice.ICB_NAME} ({selectedPractice.ICB_ODS_CODE})</p>
-            <p className="text-gray-600">PCN: {selectedPractice.PCN_NAME} ({selectedPractice.PCN_ODS_CODE})</p>
-            <p className="text-gray-600">List Size: {selectedPractice['Practice List Size']}</p>
+          <div className="bg-white p-6 rounded-lg shadow-lg mb-8 bg-white border border-[#D7D1CC]">
+            <h2 className="text-2xl mb-4">{selectedPractice.PRACTICE_NAME}</h2>
+            <div className="space-y-2 mb-6 details">
+              <p className="text-gray-600">Practice Code: {selectedPractice.PRACTICE_CODE}</p>
+              <p className="text-gray-600">ICB: {selectedPractice.ICB_NAME} ({selectedPractice.ICB_ODS_CODE})</p>
+              <p className="text-gray-600">PCN: {selectedPractice.PCN_NAME} ({selectedPractice.PCN_ODS_CODE})</p>
+              <p className="text-gray-600">List Size: {selectedPractice['Practice List Size']}</p>
+            </div>
           </div>
           
           {/* Disease Prevalence and Chart Section */}
-          <div className="bg-white p-6 rounded-lg shadow-lg">
+          <div className="bg-white p-6 rounded-lg border border-[#D7D1CC]">
             <div className="flex-1">
-              <h2 className="text-xl font-bold mb-4">Disease Prevalence Comparison</h2>
+              <h2 className="text-xl mb-4">Disease Prevalence Comparison</h2>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart
                   data={getPrevalenceData(selectedPractice)}
@@ -916,7 +918,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                     radius={[4, 4, 0, 0]}
                     barSize={35}
                   />
-                  <Bar 
+                  <Bar
                     dataKey="SubICB" 
                     name="Sub Icb Average" 
                     fill="#1d4ed8"
@@ -939,67 +941,68 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
           <FinancialAnalysis selectedPractice={selectedPractice} />
             
             {/* Call to Action */}
-          <div className="bg-[#f8f3f0] text-black p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Suvera Can Help You Maximise Your QOF Earnings</h2>
-            <p className="mb-6">
-              Suvera is an award-winning CQC proactive healthcare service that helps Practices and PCNs achieve QOF targets. We support both with a clinical service and coding software to enhance practice income. See how we've helped organisations similar to yourselves and get in touch to see how we can improve your outcomes.
-            </p>
-            <div className="flex gap-4 items-center">
-              <button 
-                onClick={() => window.location.href = 'mailto:sales@suvera.co.uk'}
-                className="bg-[#a43400] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#a43400] transition-colors"
-              >
-                Speak to Partnerships
-              </button>
-              
-              <div className="relative inline-block">
-                <button
-                  onClick={() => setShowShareOptions(prev => !prev)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center gap-2"
+          <div className="bg-[#f8f3f0] text-black p-6 rounded-lg shadow-lg border border-[#D7D1CC]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div className="md:col-span-2">
+                <h2 className="text-2xl mb-4">Suvera can help you maximise your QOF earnings</h2>
+                <p className="mb-6">
+                  Suvera is an award-winning CQC proactive healthcare service that helps practices and PCNs achieve QOF targets. We support both with a clinical service and coding software to enhance practice income. See how we've helped organisations similar to yourselves and get in touch to see how we can improve your outcomes.
+                </p>
+              </div>
+              <div className="flex flex-col gap-4 items-center justify-end md:col-span-1">
+                <button 
+                  onClick={() => window.location.href = 'mailto:sales@suvera.co.uk'}
+                  className="w-full bg-[#a43400] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#a43400] transition-colors"
                 >
-                  <span>Share with Colleague</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
+                  Speak to Partnerships
                 </button>
-                
-                {showShareOptions && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                    <div className="py-1" role="menu" aria-orientation="vertical">
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(window.location.href);
-                          setShowCopySuccess(true);
-                          setTimeout(() => setShowCopySuccess(false), 2000);
-                          setShowShareOptions(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                        role="menuitem"
-                      >
-                        Copy Link
-                      </button>
-                      <button
-                        onClick={() => {
-                          const subject = encodeURIComponent('QOF Analysis Tool Results');
-                          const body = encodeURIComponent(`Check out these QOF analysis results: ${window.location.href}`);
-                          window.location.href = `mailto:?subject=${subject}&body=${body}`;
-                          setShowShareOptions(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                        role="menuitem"
-                      >
-                        Email Link
-                      </button>
+                <div className="relative inline-block w-full">
+                  <button
+                    onClick={() => setShowShareOptions(prev => !prev)}
+                    className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>Share with Colleague</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  {showShareOptions && (
+                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                      <div className="py-1 bg-white rounded-lg" role="menu" aria-orientation="vertical">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.href);
+                            setShowCopySuccess(true);
+                            setTimeout(() => setShowCopySuccess(false), 2000);
+                            setShowShareOptions(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                          role="menuitem"
+                        >
+                          Copy Link
+                        </button>
+                        <button
+                          onClick={() => {
+                            const subject = encodeURIComponent('QOF Analysis Tool Results');
+                            const body = encodeURIComponent(`Check out these QOF analysis results: ${window.location.href}`);
+                            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                            setShowShareOptions(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                          role="menuitem"
+                        >
+                          Email Link
+                        </button>
+                      </div>
                     </div>
+                  )}
+                </div>
+                {showCopySuccess && (
+                  <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
+                    Link copied successfully!
                   </div>
                 )}
               </div>
-              
-              {showCopySuccess && (
-                <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
-                  Link copied successfully!
-                </div>
-              )}
             </div>
           </div>
         </div>

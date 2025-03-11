@@ -1,4 +1,5 @@
 import React from 'react';
+import './FinancialAnalysis.scss';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Add InfoIcon component at the top of the file
@@ -203,7 +204,7 @@ const ConditionSection = ({ title, data, prevalence }) => {
         
         {/* Table */}
         <div className="w-full lg:w-1/2 overflow-x-auto pt-12">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 border border-[#D7D1CC] rounded-lg">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Indicator</th>
@@ -430,20 +431,19 @@ const FinancialAnalysis = ({ selectedPractice }) => {
   ];
 
   return (
-    <div className="w-full p-6 bg-white">
-      <div className="bg-[#f8f3f0] p-6 rounded-lg mb-6">
+    <div className="w-full p-6 bg-white rounded-lg border border-[#D7D1CC]">
+      <div className="bg-[#FFFBF9] p-6 rounded-lg mb-6 border border-[#D7D1CC]">
         <div className="flex justify-between items-start gap-8">
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">How the contract changes impact your CVD indicators</h2>
-            <div className="space-y-2">
-              <p><span className="font-medium">Earnings 2023/24</span> = What your practice earned last year</p>
-              <p><span className="font-medium">Earnings 2025/26</span> = What your practice will earn next year if you perform the same as last year</p>
-              <p><span className="font-medium">Full Target</span> = What you could earn next year if you hit the maximum thresholds</p>
+          <div className="details">
+            <h2 className="text-2xl font-bold mb-4">{selectedPractice.PRACTICE_NAME}</h2>
+            <div className="space-y-2 mb-6">
+              <p className="text-gray-600">Practice Code: {selectedPractice.PRACTICE_CODE}</p>
+              <p className="text-gray-600">ICB: {selectedPractice.ICB_NAME} ({selectedPractice.ICB_ODS_CODE})</p>
+              <p className="text-gray-600">PCN: {selectedPractice.PCN_NAME} ({selectedPractice.PCN_ODS_CODE})</p>
+              <p className="text-gray-600">List Size: {selectedPractice['Practice List Size']?.toLocaleString()}</p>
             </div>
           </div>
-
-          <div className="w-[300px] flex-shrink-0">
-            <h3 className="text-lg font-medium mb-4">See what you could earn with increased disease prevalence?</h3>
+          <div className="button-container">
             <button
               onClick={() => setPrevalence(prevalence === 1 ? 0 : 1)}
               className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -452,12 +452,15 @@ const FinancialAnalysis = ({ selectedPractice }) => {
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              {prevalence > 0 ? 'Yes' : 'No'}
+              {prevalence > 0 ? 'Prevalence On' : 'Prevalence Off'}
             </button>
 
             {prevalence > 0 && (
               <div className="mt-6">
-                <div className="text-sm font-medium mb-2">Disease Prevalence: {prevalence}%</div>
+                <div className="text-md font-medium mb-2">Disease Prevalence: {prevalence}%</div>
+                <p className="text-xs text-gray-500 italic mt-2 mb-2">
+                  Adjust the slider to see potential earnings with increased disease prevalence
+                </p>
                 <div className="w-full">
                   <input
                     type="range"
@@ -474,9 +477,6 @@ const FinancialAnalysis = ({ selectedPractice }) => {
                     <span className="text-xs text-gray-500">3%</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 italic mt-2">
-                  Adjust the slider to see potential earnings with increased disease prevalence
-                </p>
               </div>
             )}
           </div>
@@ -490,17 +490,17 @@ const FinancialAnalysis = ({ selectedPractice }) => {
       <ConditionSection title="DM" data={data.DM} prevalence={prevalence} />
 
       {/* Summary Box */}
-      <div className="mt-8 bg-gray-50 rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Total Financial Summary</h2>
+      <div className="mt-8 bg-[#FFFBF9] border border-[#D7D1CC] rounded-lg shadow-lg p-6 financial-analysis__summary">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Total financial summary</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm text-gray-600 mb-2">2023/24 Total Earnings</h3>
+          <div className="bg-blue-50 p-4 rounded-lg border border-[#D7D1CC]">
+            <h3 className="text-sm text-gray-600 mb-2">2023/24 total earnings</h3>
             <p className="text-2xl font-bold text-blue-600">
               {formatCurrency(totalEarnings.earnings2324)}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm text-gray-600 mb-2">2025/26 Base Earnings</h3>
+          <div className="bg-green-50 p-4 rounded-lg border border-[#D7D1CC]">
+            <h3 className="text-sm text-gray-600 mb-2">2025/26 base earnings</h3>
             <p className="text-2xl font-bold text-green-600">
               {formatCurrency(totalEarnings.earnings2526)}
             </p>
@@ -508,8 +508,8 @@ const FinancialAnalysis = ({ selectedPractice }) => {
               {((totalEarnings.earnings2526 / totalEarnings.earnings2324 - 1) * 100).toFixed(1)}% change
             </p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm text-gray-600 mb-2">Full Target Potential</h3>
+          <div className="bg-purple-50 p-4 rounded-lg border border-[#D7D1CC]">
+            <h3 className="text-sm text-gray-600 mb-2">Full target potential</h3>
             <p className="text-2xl font-bold text-purple-600">
               {formatCurrency(totalEarnings.fullTarget)}
             </p>
@@ -517,9 +517,9 @@ const FinancialAnalysis = ({ selectedPractice }) => {
               {((totalEarnings.fullTarget / totalEarnings.earnings2526 - 1) * 100).toFixed(1)}% increase
             </p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm text-gray-600 mb-2">With {prevalence}% Prevalence</h3>
-            <p className="text-2xl font-bold text-amber-600">
+          <div className="bg-orange-50 p-4 rounded-lg border border-[#D7D1CC]">
+            <h3 className="text-sm text-gray-600 mb-2">With {prevalence}% prevalence</h3>
+            <p className="text-2xl font-bold text-orange-600">
               {formatCurrency(totalEarnings.prevalenceTarget)}
             </p>
             <p className="text-sm text-gray-500 mt-1">
