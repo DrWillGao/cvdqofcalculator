@@ -12,6 +12,15 @@ const App = () => {
   useEffect(() => {
     // Set loading to false once we have auth state
     setIsLoading(false);
+
+    // Function to send the height of the document to the parent iframe
+    function sendHeight() {
+      parent.postMessage(document.body.scrollHeight, "https://suvera-2024.webflow.io/qof-calculator");
+    }
+
+    // Send height on load and resize
+    window.onload = sendHeight;
+    window.onresize = sendHeight;
   }, [isLoggedIn]);
 
   return (
