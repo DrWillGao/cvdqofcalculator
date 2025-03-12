@@ -73,7 +73,7 @@ const App = () => {
   );
 };
 
-const PasswordlessForm = ({ onSuccess, selectedPractice }) => {
+const PasswordlessForm = ({ onSuccess }) => {
   const memberstack = useMemberstack();
   const { isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
@@ -153,69 +153,21 @@ const PasswordlessForm = ({ onSuccess, selectedPractice }) => {
       
       if (isSignup) {
         // Handle signup verification
-        const signupResult = await memberstack.signupMemberPasswordless({
+        await memberstack.signupMemberPasswordless({
           passwordlessToken: verificationCode,
           email: email
         });
-        console.log('Successfully processed passwordless signup', signupResult);
-        
-        // Store the practice name in localStorage for later use
-        if (selectedPractice && selectedPractice.PRACTICE_NAME) {
-          localStorage.setItem('selectedPracticeName', selectedPractice.PRACTICE_NAME);
-          console.log('Stored practice name in localStorage:', selectedPractice.PRACTICE_NAME);
-        }
-        
-        // Call onSuccess immediately to improve user experience
-        if (onSuccess) {
-          onSuccess();
-        }
-        
-        // Attempt to update custom field after a longer delay
-        setTimeout(async () => {
-          try {
-            const practiceName = localStorage.getItem('selectedPracticeName');
-            if (!practiceName) {
-              console.log('No practice name found in localStorage');
-              return;
-            }
-            
-            console.log('Attempting delayed update of organisation field to:', practiceName);
-            
-            // Get the current member after delay
-            const currentMember = await memberstack.getCurrentMember();
-            console.log('Current member after delay:', currentMember);
-            
-            if (currentMember && currentMember.id) {
-              // Update the member's custom data with the practice name
-              const updateResult = await memberstack.updateMember({
-                customFields: {
-                  organisation: practiceName
-                }
-              });
-              console.log('Successfully updated organisation field:', updateResult);
-              
-              // Clear the localStorage after successful update
-              localStorage.removeItem('selectedPracticeName');
-            } else {
-              console.error('Still no authenticated member found after delay');
-            }
-          } catch (delayedUpdateErr) {
-            console.error('Error in delayed update of organisation field:', delayedUpdateErr);
-          }
-        }, 5000); // Try again after 5 seconds
+        console.log('Successfully processed passwordless signup');
       } else {
         // Handle login verification
-        const loginResult = await memberstack.loginMemberPasswordless({
+        await memberstack.loginMemberPasswordless({
           passwordlessToken: verificationCode,
           email: email
         });
-        console.log('Successfully processed passwordless login', loginResult);
-        
-        // Call onSuccess immediately for login
-        if (onSuccess) {
-          onSuccess();
-        }
+        console.log('Successfully processed passwordless login');
       }
+      
+      if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Verification error:', err);
       setError('Invalid verification code. Please try again.');
@@ -227,11 +179,6 @@ const PasswordlessForm = ({ onSuccess, selectedPractice }) => {
   return (
     <div className="p-8 rounded-lg shadow-lg max-w-md mx-auto bg-white border border-[#D7D1CC]">
       <h2 className="text-2xl text-gray-800 mb-6">Access your practice results</h2>
-      {selectedPractice && (
-        <p className="text-gray-800 mb-4">
-          <span className="font-medium">Selected Practice:</span> {selectedPractice.PRACTICE_NAME}
-        </p>
-      )}
       <p className="text-gray-600 mb-6">
         {!isEmailSent 
           ? "Enter your email address below and we'll send you a secure login link to view your practice results."
@@ -326,7 +273,6 @@ const PasswordlessForm = ({ onSuccess, selectedPractice }) => {
 
 const QofAnalysisTool = ({ isAuthenticated }) => {
   const { auth } = useAuth();
-  const memberstack = useMemberstack();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPractice, setSelectedPractice] = useState(null);
@@ -342,124 +288,13 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
 
-  // Function to update the organisation field for logged-in users
-  const updateOrganisationField = async (practiceName) => {
-    if (!isAuthenticated || !practiceName) return;
-    
-    try {
-      console.log('Attempting to update organisation field for logged-in user to:', practiceName);
-      
-      // Get the current member
-      const currentMember = await memberstack.getCurrentMember();
-      console.log('Current member for organisation update:', currentMember);
-      
-      if (currentMember && currentMember.id) {
-        try {
-          const updateResult = await memberstack.updateMember({
-            customFields: {
-              organisation: practiceName
-            }
-          });
-          console.log('Updated organisation field for logged-in user:', updateResult);
-          
-          // Verify the update
-          const verifyMember = await memberstack.getCurrentMember();
-          console.log('Organisation field after update:', verifyMember?.customFields?.organisation);
-          
-          // Clear from localStorage if it exists
-          localStorage.removeItem('selectedPracticeName');
-          return true;
-        } catch (updateError) {
-          console.error('Error updating member custom fields:', updateError);
-          // Store in localStorage as fallback
-          localStorage.setItem('selectedPracticeName', practiceName);
-          return false;
-        }
-      } else {
-        console.log('No authenticated member found to update organisation field');
-        
-        // Store in localStorage for later use
-        localStorage.setItem('selectedPracticeName', practiceName);
-        return false;
-      }
-    } catch (err) {
-      console.error('Error updating organisation field:', err);
-      
-      // Store in localStorage as fallback
-      localStorage.setItem('selectedPracticeName', practiceName);
-      return false;
-    }
-  };
-
   const handleViewResults = async () => {
     if (!isAuthenticated) {
       setShowLoginForm(true);
       return;
     }
-    
-    // If user is already authenticated, update their organisation field
-    if (selectedPractice && selectedPractice.PRACTICE_NAME) {
-      await updateOrganisationField(selectedPractice.PRACTICE_NAME);
-    }
-    
     setShowResults(true);
   };
-
-  // Check for stored practice name in localStorage when component mounts
-  useEffect(() => {
-    const checkStoredPracticeName = async () => {
-      if (isAuthenticated) {
-        try {
-          const storedPracticeName = localStorage.getItem('selectedPracticeName');
-          if (storedPracticeName) {
-            console.log('Found stored practice name in localStorage:', storedPracticeName);
-            
-            // Get current member to verify authentication
-            const currentMember = await memberstack.getCurrentMember();
-            if (currentMember && currentMember.id) {
-              console.log('Authenticated member found, updating organisation field');
-              
-              try {
-                // Update the member's custom data with the practice name
-                const updateResult = await memberstack.updateMember({
-                  customFields: {
-                    organisation: storedPracticeName
-                  }
-                });
-                console.log('Successfully updated organisation field from localStorage:', updateResult);
-                
-                // Clear from localStorage after successful update
-                localStorage.removeItem('selectedPracticeName');
-              } catch (updateError) {
-                console.error('Error updating organisation field from localStorage:', updateError);
-              }
-            } else {
-              console.log('No authenticated member found, keeping practice name in localStorage');
-            }
-          }
-        } catch (error) {
-          console.error('Error checking stored practice name:', error);
-        }
-      }
-    };
-    
-    // Run the check
-    checkStoredPracticeName();
-    
-    // Also set up an interval to check periodically
-    const intervalId = setInterval(checkStoredPracticeName, 10000); // Check every 10 seconds
-    
-    return () => {
-      clearInterval(intervalId); // Clean up interval on unmount
-    };
-  }, [isAuthenticated, memberstack]);
-
-  // Update the organisation field when a practice is selected
-  useEffect(() => {
-    if (selectedPractice && selectedPractice.PRACTICE_NAME && isAuthenticated) {
-      updateOrganisationField(selectedPractice.PRACTICE_NAME);
-    }
-  }, [selectedPractice, isAuthenticated]);
 
   // Load data
   useEffect(() => {
@@ -1079,11 +914,6 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                     setShowDropdown(false);
                     setShowResults(false); // Reset results view when new practice is selected
                     searchInputRef.current?.blur();
-                    
-                    // Try to update organisation field immediately if user is authenticated
-                    if (isAuthenticated && practice.PRACTICE_NAME) {
-                      updateOrganisationField(practice.PRACTICE_NAME);
-                    }
                   }}
                 >
                   <div className="font-medium">{practice.PRACTICE_NAME}</div>
@@ -1121,7 +951,6 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
             setShowLoginForm(false);
             setShowResults(true);
           }}
-          selectedPractice={selectedPractice}
         />
       )}
 
