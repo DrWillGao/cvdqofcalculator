@@ -15,12 +15,22 @@ const App = () => {
 
     // Function to send the height of the document to the parent iframe
     function sendHeight() {
-      parent.postMessage(document.body.scrollHeight, "https://suvera-2024.webflow.io/qof-calculator");
+      const height = document.documentElement.scrollHeight;
+      parent.postMessage(height, '*');
+      
+      // Schedule another height check after images and content load
+      setTimeout(sendHeight, 1000);
     }
 
     // Send height on load and resize
-    window.onload = sendHeight;
-    window.onresize = sendHeight;
+    window.addEventListener('load', sendHeight);
+    window.addEventListener('resize', sendHeight);
+
+    // Clean up event listeners
+    return () => {
+      window.removeEventListener('load', sendHeight);
+      window.removeEventListener('resize', sendHeight);
+    };
   }, [isLoggedIn]);
 
   return (
