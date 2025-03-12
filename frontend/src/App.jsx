@@ -181,12 +181,9 @@ const PasswordlessForm = ({ onSuccess, selectedPractice }) => {
             
             console.log('Attempting delayed update of organisation field to:', practiceName);
             
-            // Force a refresh of the auth token
-            await memberstack.refreshAuth();
-            
-            // Get the current member after refresh
+            // Get the current member after delay
             const currentMember = await memberstack.getCurrentMember();
-            console.log('Current member after auth refresh:', currentMember);
+            console.log('Current member after delay:', currentMember);
             
             if (currentMember && currentMember.id) {
               // Update the member's custom data with the practice name
@@ -352,32 +349,45 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
     try {
       console.log('Attempting to update organisation field for logged-in user to:', practiceName);
       
-      // Force a refresh of the auth token
-      await memberstack.refreshAuth();
-      
+      // Get the current member
       const currentMember = await memberstack.getCurrentMember();
       console.log('Current member for organisation update:', currentMember);
       
       if (currentMember && currentMember.id) {
-        const updateResult = await memberstack.updateMember({
-          customFields: {
-            organisation: practiceName
-          }
-        });
-        console.log('Updated organisation field for logged-in user:', updateResult);
-        
-        // Verify the update
-        const verifyMember = await memberstack.getCurrentMember();
-        console.log('Organisation field after update:', verifyMember?.customFields?.organisation);
+        try {
+          const updateResult = await memberstack.updateMember({
+            customFields: {
+              organisation: practiceName
+            }
+          });
+          console.log('Updated organisation field for logged-in user:', updateResult);
+          
+          // Verify the update
+          const verifyMember = await memberstack.getCurrentMember();
+          console.log('Organisation field after update:', verifyMember?.customFields?.organisation);
+          
+          // Clear from localStorage if it exists
+          localStorage.removeItem('selectedPracticeName');
+          return true;
+        } catch (updateError) {
+          console.error('Error updating member custom fields:', updateError);
+          // Store in localStorage as fallback
+          localStorage.setItem('selectedPracticeName', practiceName);
+          return false;
+        }
       } else {
         console.log('No authenticated member found to update organisation field');
         
         // Store in localStorage for later use
         localStorage.setItem('selectedPracticeName', practiceName);
-        console.log('Stored practice name in localStorage for later use');
+        return false;
       }
     } catch (err) {
       console.error('Error updating organisation field:', err);
+      
+      // Store in localStorage as fallback
+      localStorage.setItem('selectedPracticeName', practiceName);
+      return false;
     }
   };
 
@@ -397,18 +407,52 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
 
   // Check for stored practice name in localStorage when component mounts
   useEffect(() => {
-    if (isAuthenticated) {
-      const storedPracticeName = localStorage.getItem('selectedPracticeName');
-      if (storedPracticeName) {
-        console.log('Found stored practice name in localStorage:', storedPracticeName);
-        updateOrganisationField(storedPracticeName)
-          .then(() => {
-            // Clear from localStorage after attempting to update
-            localStorage.removeItem('selectedPracticeName');
-          });
+    const checkStoredPracticeName = async () => {
+      if (isAuthenticated) {
+        try {
+          const storedPracticeName = localStorage.getItem('selectedPracticeName');
+          if (storedPracticeName) {
+            console.log('Found stored practice name in localStorage:', storedPracticeName);
+            
+            // Get current member to verify authentication
+            const currentMember = await memberstack.getCurrentMember();
+            if (currentMember && currentMember.id) {
+              console.log('Authenticated member found, updating organisation field');
+              
+              try {
+                // Update the member's custom data with the practice name
+                const updateResult = await memberstack.updateMember({
+                  customFields: {
+                    organisation: storedPracticeName
+                  }
+                });
+                console.log('Successfully updated organisation field from localStorage:', updateResult);
+                
+                // Clear from localStorage after successful update
+                localStorage.removeItem('selectedPracticeName');
+              } catch (updateError) {
+                console.error('Error updating organisation field from localStorage:', updateError);
+              }
+            } else {
+              console.log('No authenticated member found, keeping practice name in localStorage');
+            }
+          }
+        } catch (error) {
+          console.error('Error checking stored practice name:', error);
+        }
       }
-    }
-  }, [isAuthenticated]);
+    };
+    
+    // Run the check
+    checkStoredPracticeName();
+    
+    // Also set up an interval to check periodically
+    const intervalId = setInterval(checkStoredPracticeName, 10000); // Check every 10 seconds
+    
+    return () => {
+      clearInterval(intervalId); // Clean up interval on unmount
+    };
+  }, [isAuthenticated, memberstack]);
 
   // Update the organisation field when a practice is selected
   useEffect(() => {
