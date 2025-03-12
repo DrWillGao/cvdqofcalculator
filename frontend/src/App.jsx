@@ -153,44 +153,65 @@ const PasswordlessForm = ({ onSuccess, selectedPractice }) => {
       
       if (isSignup) {
         // Handle signup verification
-        await memberstack.signupMemberPasswordless({
+        const signupResult = await memberstack.signupMemberPasswordless({
           passwordlessToken: verificationCode,
           email: email
         });
-        console.log('Successfully processed passwordless signup');
+        console.log('Successfully processed passwordless signup', signupResult);
         
         // If this is a signup and we have a selected practice, update the custom field
         if (selectedPractice && selectedPractice.PRACTICE_NAME) {
-          try {
-            // Wait a moment for the signup to complete
-            setTimeout(async () => {
-              try {
+          console.log('Will attempt to set organisation to:', selectedPractice.PRACTICE_NAME);
+          
+          // More robust approach to update the member's custom field
+          const updateCustomField = async () => {
+            try {
+              // Get the current member to ensure we're authenticated
+              const currentMember = await memberstack.getCurrentMember();
+              console.log('Current member for custom field update:', currentMember);
+              
+              if (currentMember && currentMember.id) {
                 // Update the member's custom data with the practice name
-                await memberstack.updateMember({
+                const updateResult = await memberstack.updateMember({
                   customFields: {
                     organisation: selectedPractice.PRACTICE_NAME
                   }
                 });
-                console.log('Updated member with practice name:', selectedPractice.PRACTICE_NAME);
-              } catch (updateErr) {
-                console.error('Failed to update member with practice name:', updateErr);
+                console.log('Updated member with practice name:', selectedPractice.PRACTICE_NAME, updateResult);
+                
+                // Verify the update was successful
+                const verifyMember = await memberstack.getCurrentMember();
+                console.log('Verified member after update:', verifyMember);
+                console.log('Organisation field value:', verifyMember?.customFields?.organisation);
+              } else {
+                console.error('Cannot update custom field: No authenticated member found');
               }
-            }, 1000);
-          } catch (customFieldErr) {
-            console.error('Error setting custom field:', customFieldErr);
-            // Don't throw here, we still want to proceed with the signup
-          }
+            } catch (updateErr) {
+              console.error('Failed to update member with practice name:', updateErr);
+            }
+          };
+          
+          // Try immediately and then with a delay to ensure it works
+          updateCustomField();
+          
+          // Also try after a delay to ensure authentication is complete
+          setTimeout(updateCustomField, 2000);
         }
       } else {
         // Handle login verification
-        await memberstack.loginMemberPasswordless({
+        const loginResult = await memberstack.loginMemberPasswordless({
           passwordlessToken: verificationCode,
           email: email
         });
-        console.log('Successfully processed passwordless login');
+        console.log('Successfully processed passwordless login', loginResult);
       }
       
-      if (onSuccess) onSuccess();
+      if (onSuccess) {
+        // Short delay before calling onSuccess to allow custom field update to complete
+        setTimeout(() => {
+          onSuccess();
+        }, 500);
+      }
     } catch (err) {
       console.error('Verification error:', err);
       setError('Invalid verification code. Please try again.');
@@ -317,13 +338,49 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
 
+  // Function to update the organisation field for logged-in users
+  const updateOrganisationField = async (practiceName) => {
+    if (!isAuthenticated || !practiceName) return;
+    
+    try {
+      console.log('Attempting to update organisation field for logged-in user to:', practiceName);
+      const currentMember = await memberstack.getCurrentMember();
+      
+      if (currentMember && currentMember.id) {
+        const updateResult = await memberstack.updateMember({
+          customFields: {
+            organisation: practiceName
+          }
+        });
+        console.log('Updated organisation field for logged-in user:', updateResult);
+      } else {
+        console.log('No authenticated member found to update organisation field');
+      }
+    } catch (err) {
+      console.error('Error updating organisation field:', err);
+    }
+  };
+
   const handleViewResults = async () => {
     if (!isAuthenticated) {
       setShowLoginForm(true);
       return;
     }
+    
+    // If user is already authenticated, update their organisation field
+    if (selectedPractice && selectedPractice.PRACTICE_NAME) {
+      await updateOrganisationField(selectedPractice.PRACTICE_NAME);
+    }
+    
     setShowResults(true);
   };
+
+  // Update the organisation field when a practice is selected
+  useEffect(() => {
+    if (selectedPractice && selectedPractice.PRACTICE_NAME && isAuthenticated) {
+      updateOrganisationField(selectedPractice.PRACTICE_NAME);
+    }
+  }, [selectedPractice, isAuthenticated]);
 
   // Load data
   useEffect(() => {
@@ -943,6 +1000,11 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                     setShowDropdown(false);
                     setShowResults(false); // Reset results view when new practice is selected
                     searchInputRef.current?.blur();
+                    
+                    // Try to update organisation field immediately if user is authenticated
+                    if (isAuthenticated && practice.PRACTICE_NAME) {
+                      updateOrganisationField(practice.PRACTICE_NAME);
+                    }
                   }}
                 >
                   <div className="font-medium">{practice.PRACTICE_NAME}</div>
