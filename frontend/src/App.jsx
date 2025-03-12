@@ -73,7 +73,7 @@ const App = () => {
   );
 };
 
-const PasswordlessForm = ({ onSuccess }) => {
+const PasswordlessForm = ({ onSuccess, selectedPractice }) => {
   const memberstack = useMemberstack();
   const { isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
@@ -158,6 +158,29 @@ const PasswordlessForm = ({ onSuccess }) => {
           email: email
         });
         console.log('Successfully processed passwordless signup');
+        
+        // If this is a signup and we have a selected practice, update the custom field
+        if (selectedPractice && selectedPractice.PRACTICE_NAME) {
+          try {
+            // Wait a moment for the signup to complete
+            setTimeout(async () => {
+              try {
+                // Update the member's custom data with the practice name
+                await memberstack.updateMember({
+                  customFields: {
+                    organisation: selectedPractice.PRACTICE_NAME
+                  }
+                });
+                console.log('Updated member with practice name:', selectedPractice.PRACTICE_NAME);
+              } catch (updateErr) {
+                console.error('Failed to update member with practice name:', updateErr);
+              }
+            }, 1000);
+          } catch (customFieldErr) {
+            console.error('Error setting custom field:', customFieldErr);
+            // Don't throw here, we still want to proceed with the signup
+          }
+        }
       } else {
         // Handle login verification
         await memberstack.loginMemberPasswordless({
@@ -179,6 +202,11 @@ const PasswordlessForm = ({ onSuccess }) => {
   return (
     <div className="p-8 rounded-lg shadow-lg max-w-md mx-auto bg-white border border-[#D7D1CC]">
       <h2 className="text-2xl text-gray-800 mb-6">Access your practice results</h2>
+      {selectedPractice && (
+        <p className="text-gray-800 mb-4">
+          <span className="font-medium">Selected Practice:</span> {selectedPractice.PRACTICE_NAME}
+        </p>
+      )}
       <p className="text-gray-600 mb-6">
         {!isEmailSent 
           ? "Enter your email address below and we'll send you a secure login link to view your practice results."
@@ -273,6 +301,7 @@ const PasswordlessForm = ({ onSuccess }) => {
 
 const QofAnalysisTool = ({ isAuthenticated }) => {
   const { auth } = useAuth();
+  const memberstack = useMemberstack();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPractice, setSelectedPractice] = useState(null);
@@ -951,6 +980,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
             setShowLoginForm(false);
             setShowResults(true);
           }}
+          selectedPractice={selectedPractice}
         />
       )}
 
