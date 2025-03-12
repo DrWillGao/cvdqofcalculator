@@ -13,23 +13,36 @@ const App = () => {
     // Set loading to false once we have auth state
     setIsLoading(false);
 
+    let timeoutId = null;
+    let previousHeight = 0;
+
     // Function to send the height of the document to the parent iframe
     function sendHeight() {
       const height = document.documentElement.scrollHeight;
-      parent.postMessage(height, '*');
       
-      // Schedule another height check after images and content load
-      setTimeout(sendHeight, 1000);
+      // Only send message if height has changed
+      if (height !== previousHeight) {
+        parent.postMessage(height, '*');
+        previousHeight = height;
+      }
     }
 
-    // Send height on load and resize
-    window.addEventListener('load', sendHeight);
-    window.addEventListener('resize', sendHeight);
+    // Initial height check
+    sendHeight();
 
-    // Clean up event listeners
+    // Set up observers for content changes
+    const resizeObserver = new ResizeObserver(() => {
+      sendHeight();
+    });
+
+    // Observe the document body for size changes
+    resizeObserver.observe(document.body);
+
+    // Clean up
     return () => {
-      window.removeEventListener('load', sendHeight);
-      window.removeEventListener('resize', sendHeight);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
     };
   }, [isLoggedIn]);
 
