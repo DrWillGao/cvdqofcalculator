@@ -13,15 +13,20 @@ const App = () => {
     // Set loading to false once we have auth state
     setIsLoading(false);
 
-    let timeoutId = null;
     let previousHeight = 0;
 
     // Function to send the height of the document to the parent iframe
     function sendHeight() {
-      const height = document.documentElement.scrollHeight;
+      // Use the maximum of various height measurements to ensure we capture all content
+      const height = Math.max(
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight,
+        document.body.scrollHeight,
+        document.body.offsetHeight
+      );
       
-      // Only send message if height has changed
-      if (height !== previousHeight) {
+      // Only send message if height has changed significantly (more than 5px)
+      if (Math.abs(height - previousHeight) > 5) {
         parent.postMessage(height, '*');
         previousHeight = height;
       }
@@ -32,16 +37,33 @@ const App = () => {
 
     // Set up observers for content changes
     const resizeObserver = new ResizeObserver(() => {
-      sendHeight();
+      // Debounce the height calculation slightly to avoid too frequent updates
+      requestAnimationFrame(sendHeight);
     });
 
-    // Observe the document body for size changes
+    // Observe both body and documentElement for size changes
     resizeObserver.observe(document.body);
+    resizeObserver.observe(document.documentElement);
+
+    // Also listen for dynamic content changes
+    const mutationObserver = new MutationObserver(() => {
+      requestAnimationFrame(sendHeight);
+    });
+
+    // Observe the entire document for content changes
+    mutationObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true
+    });
 
     // Clean up
     return () => {
       if (resizeObserver) {
         resizeObserver.disconnect();
+      }
+      if (mutationObserver) {
+        mutationObserver.disconnect();
       }
     };
   }, [isLoggedIn]);
@@ -59,13 +81,11 @@ const PasswordlessForm = ({ onSuccess }) => {
   const [isEmailSent, setIsEmailSent] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLoading) {
-      console.log('Early return:', { isLoading });
-      return;
-    }
+    if (isLoading) return;
 
     setIsLoading(true);
     setError('');
@@ -76,26 +96,46 @@ const PasswordlessForm = ({ onSuccess }) => {
       }
 
       console.log('Sending passwordless email to:', email);
-      const response = await memberstack.sendMemberLoginPasswordlessEmail({
-        email,
-        redirectUrl: `${window.location.origin}${window.location.pathname}`,
-        createMemberIfNotExists: true,
-        plans: [{
-          planId: "pln_free-trial-c8zqm9xj3",
-          type: "DEFAULT"
-        }]
-      });
       
-      console.log('Passwordless email response:', response);
-      setIsEmailSent(true);
+      // Try login first
+      try {
+        const response = await memberstack.sendMemberLoginPasswordlessEmail({
+          email,
+          redirectUrl: `${window.location.origin}${window.location.pathname}`
+        });
+        console.log('Passwordless login email response:', response);
+        setIsEmailSent(true);
+        setIsSignup(false);
+      } catch (loginErr) {
+        console.log('Login failed, attempting signup:', loginErr);
+        
+        // If login fails, try signup
+        try {
+          const signupResponse = await memberstack.sendMemberSignupPasswordlessEmail({
+            email,
+            redirectUrl: `${window.location.origin}${window.location.pathname}`,
+            plans: [{
+              planId: "pln_free-trial-c8zqm9xj3",
+              type: "DEFAULT"
+            }]
+          });
+          console.log('Passwordless signup email response:', signupResponse);
+          setIsEmailSent(true);
+          setIsSignup(true);
+        } catch (signupErr) {
+          console.error('Signup also failed:', signupErr);
+          throw new Error('Could not send verification email. Please try again later.');
+        }
+      }
+      
       setVerificationCode('');
     } catch (err) {
-      console.error('Login error details:', {
+      console.error('Authentication error details:', {
         message: err.message,
         error: err,
         stack: err.stack
       });
-      setError(err.message || "Couldn't send login email. Please try again.");
+      setError(err.message || "Couldn't send email. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -110,11 +150,23 @@ const PasswordlessForm = ({ onSuccess }) => {
 
     try {
       console.log('Submitting verification code:', verificationCode);
-      await memberstack.loginMemberPasswordless({
-        passwordlessToken: verificationCode,
-        email: email
-      });
-      console.log('Successfully processed passwordless login');
+      
+      if (isSignup) {
+        // Handle signup verification
+        await memberstack.signupMemberPasswordless({
+          passwordlessToken: verificationCode,
+          email: email
+        });
+        console.log('Successfully processed passwordless signup');
+      } else {
+        // Handle login verification
+        await memberstack.loginMemberPasswordless({
+          passwordlessToken: verificationCode,
+          email: email
+        });
+        console.log('Successfully processed passwordless login');
+      }
+      
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Verification error:', err);
@@ -125,12 +177,12 @@ const PasswordlessForm = ({ onSuccess }) => {
   };
 
   return (
-    <div className=" p-8 rounded-lg shadow-lg max-w-md mx-auto bg-white border border-[#D7D1CC]">
+    <div className="p-8 rounded-lg shadow-lg max-w-md mx-auto bg-white border border-[#D7D1CC]">
       <h2 className="text-2xl text-gray-800 mb-6">Access your practice results</h2>
       <p className="text-gray-600 mb-6">
         {!isEmailSent 
           ? "Enter your email address below and we'll send you a secure login link to view your practice results."
-          : "Please enter the verification code sent to your email."}
+          : `Please enter the verification code sent to ${email}.`}
       </p>
       
       <form onSubmit={isEmailSent ? handleVerificationSubmit : handleSubmit} className="space-y-6">
@@ -836,7 +888,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       <div className="bg-[#f8f3f0] p-6 rounded-lg shadow-lg mb-8">
         <h1 className="text-2xl text-black mb-4">2025/26 Cardiovascular QOF Indicator Analysis Tool</h1>
         <p className="text-black mb-4">
-          Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact you for your CVD indicators, and outline where there is room for opportunity
+          Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact your CVD indicators, and outline where there is room for opportunity
         </p>
         
         <div className="relative">
