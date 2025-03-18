@@ -184,7 +184,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 relative">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 relative overflow-hidden">
         {/* Close button */}
         <button 
           onClick={onClose}
@@ -196,7 +196,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
         </button>
         
         {/* Tab navigation */}
-        <div className="flex border-b">
+        <div className="flex border-b overflow-hidden">
           <button
             className={`flex-1 py-3 ${activeTab === 'signup' ? 'bg-white font-medium' : 'bg-gray-100'}`}
             onClick={() => {
@@ -240,7 +240,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleInputChange}
-                          className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter your first name"
                           required
                         />
@@ -255,7 +255,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                           name="lastName"
                           value={formData.lastName}
                           onChange={handleInputChange}
-                          className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter your last name"
                           required
                         />
@@ -272,7 +272,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                         name="jobTitle"
                         value={formData.jobTitle}
                         onChange={handleInputChange}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="e.g Practice manager"
                         required
                       />
@@ -288,7 +288,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                         name="organisation"
                         value={formData.organisation}
                         onChange={handleInputChange}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="ICB, PCN, or Practice"
                         required
                       />
@@ -304,14 +304,14 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter your email"
                         required
                       />
                     </div>
                     
                     {error && (
-                      <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+                      <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
                         {error}
                       </div>
                     )}
@@ -319,7 +319,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                     <button
                       type="submit"
                       disabled={loading}
-                      className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+                      className={`w-full py-3 px-4 rounded-lg text-white font-medium ${
                         loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
                       } transition-colors`}
                     >
@@ -343,14 +343,14 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                         id="loginEmail"
                         value={loginEmail}
                         onChange={handleLoginInputChange}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter your email"
                         required
                       />
                     </div>
                     
                     {error && (
-                      <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+                      <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
                         {error}
                       </div>
                     )}
@@ -358,7 +358,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                     <button
                       type="submit"
                       disabled={loading}
-                      className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+                      className={`w-full py-3 px-4 rounded-lg text-white font-medium ${
                         loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
                       } transition-colors`}
                     >
@@ -388,14 +388,14 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                     id="verificationCode"
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
-                    className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter verification code"
                     required
                   />
                 </div>
                 
                 {error && (
-                  <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+                  <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
                     {error}
                   </div>
                 )}
@@ -403,7 +403,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+                  className={`w-full py-3 px-4 rounded-lg text-white font-medium ${
                     loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
                   } transition-colors`}
                 >
@@ -413,7 +413,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
                 <button
                   type="button"
                   onClick={() => setIsEmailSent(false)}
-                  className="w-full text-blue-600 text-sm hover:underline"
+                  className="w-full text-blue-600 text-sm hover:underline rounded-lg py-2"
                 >
                   ← Back to {activeTab === 'signup' ? 'sign up' : 'log in'}
                 </button>
