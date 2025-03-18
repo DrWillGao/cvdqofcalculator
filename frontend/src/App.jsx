@@ -64,9 +64,9 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
         email: formData.email,
         redirectUrl: `${window.location.origin}${window.location.pathname}`,
         customFields: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          jobTitle: formData.jobTitle,
+          "first-name": formData.firstName,
+          "last-name": formData.lastName,
+          "job-title": formData.jobTitle,
           organisation: formData.organisation
         },
         plans: [{
@@ -134,9 +134,9 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
           passwordlessToken: verificationCode,
           email: formData.email,
           customFields: {
-            firstName: storedData.firstName || formData.firstName,
-            lastName: storedData.lastName || formData.lastName,
-            jobTitle: storedData.jobTitle || formData.jobTitle,
+            "first-name": storedData.firstName || formData.firstName,
+            "last-name": storedData.lastName || formData.lastName,
+            "job-title": storedData.jobTitle || formData.jobTitle,
             organisation: storedData.organisation || formData.organisation
           }
         });
@@ -150,9 +150,9 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
         // Update custom fields explicitly after signup as a final attempt
         await memberstack.updateMember({
           customFields: {
-            firstName: storedData.firstName || formData.firstName,
-            lastName: storedData.lastName || formData.lastName,
-            jobTitle: storedData.jobTitle || formData.jobTitle,
+            "first-name": storedData.firstName || formData.firstName,
+            "last-name": storedData.lastName || formData.lastName,
+            "job-title": storedData.jobTitle || formData.jobTitle,
             organisation: storedData.organisation || formData.organisation
           }
         });
