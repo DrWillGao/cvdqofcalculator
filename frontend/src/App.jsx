@@ -5,18 +5,472 @@ import { Slider } from './components/ui/slider';
 import FinancialAnalysis from './components/FinancialAnalysis';
 import { useAuth, useMemberstack } from "@memberstack/react";
 
+const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selectedPractice }) => {
+  const [activeTab, setActiveTab] = useState('signup'); // 'signup' or 'login'
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    jobTitle: '',
+    organisation: selectedPractice ? selectedPractice.PRACTICE_NAME : '',
+    email: ''
+  });
+  const [loginEmail, setLoginEmail] = useState('');
+  const [isEmailSent, setIsEmailSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+
+  useEffect(() => {
+    if (selectedPractice) {
+      setFormData(prev => ({
+        ...prev,
+        organisation: selectedPractice.PRACTICE_NAME
+      }));
+    }
+  }, [selectedPractice]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLoginInputChange = (e) => {
+    setLoginEmail(e.target.value);
+  };
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.email || !formData.email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Signing up with data:', formData);
+      
+      // Store the form data in local state to use during verification
+      localStorage.setItem('signupData', JSON.stringify({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        jobTitle: formData.jobTitle,
+        organisation: formData.organisation
+      }));
+      
+      const response = await memberstack.sendMemberSignupPasswordlessEmail({
+        email: formData.email,
+        redirectUrl: `${window.location.origin}${window.location.pathname}`,
+        customFields: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          jobTitle: formData.jobTitle,
+          organisation: formData.organisation
+        },
+        plans: [{
+          planId: "pln_free-trial-c8zqm9xj3",
+          type: "DEFAULT"
+        }]
+      });
+      
+      console.log('Signup response:', response);
+      setIsEmailSent(true);
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError(err.message || "Couldn't send verification email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+    if (!loginEmail || !loginEmail.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Sending login email to:', loginEmail);
+      const response = await memberstack.sendMemberLoginPasswordlessEmail({
+        email: loginEmail,
+        redirectUrl: `${window.location.origin}${window.location.pathname}`
+      });
+      
+      console.log('Login email response:', response);
+      setIsEmailSent(true);
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || "Couldn't send login email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerification = async (e) => {
+    e.preventDefault();
+    if (!verificationCode) {
+      setError('Please enter the verification code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      if (activeTab === 'signup') {
+        // Get stored signup data
+        const storedData = JSON.parse(localStorage.getItem('signupData') || '{}');
+        console.log('Using stored data for verification:', storedData);
+        
+        // Complete signup with customFields
+        const signupResult = await memberstack.signupMemberPasswordless({
+          passwordlessToken: verificationCode,
+          email: formData.email,
+          customFields: {
+            firstName: storedData.firstName || formData.firstName,
+            lastName: storedData.lastName || formData.lastName,
+            jobTitle: storedData.jobTitle || formData.jobTitle,
+            organisation: storedData.organisation || formData.organisation
+          }
+        });
+        
+        console.log('Signup completed with result:', signupResult);
+        
+        // After signup is complete, try to get the member data
+        const member = await memberstack.getMemberJSON();
+        console.log('Member data after signup:', member);
+        
+        // Update custom fields explicitly after signup as a final attempt
+        await memberstack.updateMember({
+          customFields: {
+            firstName: storedData.firstName || formData.firstName,
+            lastName: storedData.lastName || formData.lastName,
+            jobTitle: storedData.jobTitle || formData.jobTitle,
+            organisation: storedData.organisation || formData.organisation
+          }
+        });
+        
+        console.log('Custom fields updated after signup');
+      } else {
+        await memberstack.loginMemberPasswordless({
+          passwordlessToken: verificationCode,
+          email: loginEmail
+        });
+      }
+      
+      // Clean up stored data
+      localStorage.removeItem('signupData');
+      
+      console.log('Successfully authenticated');
+      if (onLoginSuccess) onLoginSuccess();
+      onClose();
+    } catch (err) {
+      console.error('Verification error:', err);
+      setError('Invalid verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // If the modal is not open, don't render anything
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 relative">
+        {/* Close button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        
+        {/* Tab navigation */}
+        <div className="flex border-b">
+          <button
+            className={`flex-1 py-3 ${activeTab === 'signup' ? 'bg-white font-medium' : 'bg-gray-100'}`}
+            onClick={() => {
+              setActiveTab('signup');
+              setError('');
+              setIsEmailSent(false);
+            }}
+          >
+            Sign up
+          </button>
+          <button
+            className={`flex-1 py-3 ${activeTab === 'login' ? 'bg-white font-medium' : 'bg-gray-100'}`}
+            onClick={() => {
+              setActiveTab('login');
+              setError('');
+              setIsEmailSent(false);
+            }}
+          >
+            Log in
+          </button>
+        </div>
+        
+        <div className="p-6">
+          {!isEmailSent ? (
+            <>
+              {activeTab === 'signup' ? (
+                <>
+                  <h2 className="text-2xl font-medium text-gray-900 mb-6">
+                    Sign up to access all our Webinars and Reports
+                  </h2>
+                  
+                  <form onSubmit={handleSignup} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                          First name
+                        </label>
+                        <input
+                          type="text"
+                          id="firstName"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter your first name"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                          Last name
+                        </label>
+                        <input
+                          type="text"
+                          id="lastName"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter your last name"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-1">
+                        Job title
+                      </label>
+                      <input
+                        type="text"
+                        id="jobTitle"
+                        name="jobTitle"
+                        value={formData.jobTitle}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g Practice manager"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="organisation" className="block text-sm font-medium text-gray-700 mb-1">
+                        Organisation
+                      </label>
+                      <input
+                        type="text"
+                        id="organisation"
+                        name="organisation"
+                        value={formData.organisation}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="ICB, PCN, or Practice"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter your email"
+                        required
+                      />
+                    </div>
+                    
+                    {error && (
+                      <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+                        {error}
+                      </div>
+                    )}
+                    
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+                        loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
+                      } transition-colors`}
+                    >
+                      {loading ? 'Processing...' : 'Sign up'}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-medium text-gray-900 mb-6">
+                    Log in to your account
+                  </h2>
+                  
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                      <label htmlFor="loginEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        id="loginEmail"
+                        value={loginEmail}
+                        onChange={handleLoginInputChange}
+                        className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter your email"
+                        required
+                      />
+                    </div>
+                    
+                    {error && (
+                      <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+                        {error}
+                      </div>
+                    )}
+                    
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+                        loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
+                      } transition-colors`}
+                    >
+                      {loading ? 'Processing...' : 'Log in'}
+                    </button>
+                  </form>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-medium text-gray-900 mb-6">
+                Verify your email
+              </h2>
+              
+              <p className="text-gray-600 mb-4">
+                We've sent a verification code to your email. Please enter it below to continue.
+              </p>
+              
+              <form onSubmit={handleVerification} className="space-y-4">
+                <div>
+                  <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-1">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    id="verificationCode"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter verification code"
+                    required
+                  />
+                </div>
+                
+                {error && (
+                  <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+                    {error}
+                  </div>
+                )}
+                
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+                    loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
+                  } transition-colors`}
+                >
+                  {loading ? 'Verifying...' : 'Verify Code'}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setIsEmailSent(false)}
+                  className="w-full text-blue-600 text-sm hover:underline"
+                >
+                  ← Back to {activeTab === 'signup' ? 'sign up' : 'log in'}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const { isLoggedIn, member } = useAuth();
+  const memberstack = useMemberstack();
   const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize Memberstack
+  useEffect(() => {
+    // Check if Memberstack is available
+    if (memberstack) {
+      console.log("Memberstack initialized");
+      
+      // Just add a listener without expecting an unsubscribe function
+      try {
+        memberstack.onAuthChange(auth => {
+          console.log("Auth state changed:", auth);
+        });
+      } catch (e) {
+        console.error("Error setting up auth change listener:", e);
+      }
+    } else {
+      console.error("Memberstack not initialized properly");
+    }
+    
+    // No cleanup needed for this effect
+  }, [memberstack]);
 
   useEffect(() => {
     // Set loading to false once we have auth state
     setIsLoading(false);
+    
+    // Debug auth state
+    console.log("Auth state in main component:", { isLoggedIn, member });
 
     let previousHeight = 0;
 
     // Function to send the height of the document to the parent iframe
     function sendHeight() {
+      // Check if we're in an iframe before trying to communicate with parent
+      const isInIframe = window !== window.parent;
+      
+      if (!isInIframe) {
+        console.log("Not in iframe, skipping height message");
+        return;
+      }
+      
       // Use the maximum of various height measurements to ensure we capture all content
       const height = Math.max(
         document.documentElement.scrollHeight,
@@ -27,8 +481,12 @@ const App = () => {
       
       // Only send message if height has changed significantly (more than 5px)
       if (Math.abs(height - previousHeight) > 5) {
-        parent.postMessage(height, '*');
-        previousHeight = height;
+        try {
+          parent.postMessage(height, '*');
+          previousHeight = height;
+        } catch (e) {
+          console.error("Error posting message to parent:", e);
+        }
       }
     }
 
@@ -68,211 +526,22 @@ const App = () => {
     };
   }, [isLoggedIn]);
 
+  // Monitor authentication changes
+  useEffect(() => {
+    console.log("Authentication state changed:", { isLoggedIn });
+    if (isLoggedIn) {
+      console.log("User is authenticated:", member);
+    }
+  }, [isLoggedIn, member]);
+
   return (
     <QofAnalysisTool isAuthenticated={isLoggedIn} />
   );
 };
 
-const PasswordlessForm = ({ onSuccess }) => {
-  const memberstack = useMemberstack();
-  const { isLoading: authLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isEmailSent, setIsEmailSent] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSignup, setIsSignup] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isLoading) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      if (!email || !email.includes('@')) {
-        throw new Error('Please enter a valid email address');
-      }
-
-      console.log('Sending passwordless email to:', email);
-      
-      // Try login first
-      try {
-        const response = await memberstack.sendMemberLoginPasswordlessEmail({
-          email,
-          redirectUrl: `${window.location.origin}${window.location.pathname}`
-        });
-        console.log('Passwordless login email response:', response);
-        setIsEmailSent(true);
-        setIsSignup(false);
-      } catch (loginErr) {
-        console.log('Login failed, attempting signup:', loginErr);
-        
-        // If login fails, try signup
-        try {
-          const signupResponse = await memberstack.sendMemberSignupPasswordlessEmail({
-            email,
-            redirectUrl: `${window.location.origin}${window.location.pathname}`,
-            plans: [{
-              planId: "pln_free-trial-c8zqm9xj3",
-              type: "DEFAULT"
-            }]
-          });
-          console.log('Passwordless signup email response:', signupResponse);
-          setIsEmailSent(true);
-          setIsSignup(true);
-        } catch (signupErr) {
-          console.error('Signup also failed:', signupErr);
-          throw new Error('Could not send verification email. Please try again later.');
-        }
-      }
-      
-      setVerificationCode('');
-    } catch (err) {
-      console.error('Authentication error details:', {
-        message: err.message,
-        error: err,
-        stack: err.stack
-      });
-      setError(err.message || "Couldn't send email. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerificationSubmit = async (e) => {
-    e.preventDefault();
-    if (isLoading) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      console.log('Submitting verification code:', verificationCode);
-      
-      if (isSignup) {
-        // Handle signup verification
-        await memberstack.signupMemberPasswordless({
-          passwordlessToken: verificationCode,
-          email: email
-        });
-        console.log('Successfully processed passwordless signup');
-      } else {
-        // Handle login verification
-        await memberstack.loginMemberPasswordless({
-          passwordlessToken: verificationCode,
-          email: email
-        });
-        console.log('Successfully processed passwordless login');
-      }
-      
-      if (onSuccess) onSuccess();
-    } catch (err) {
-      console.error('Verification error:', err);
-      setError('Invalid verification code. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="p-8 rounded-lg shadow-lg max-w-md mx-auto bg-white border border-[#D7D1CC]">
-      <h2 className="text-2xl text-gray-800 mb-6">Access your practice results</h2>
-      <p className="text-gray-600 mb-6">
-        {!isEmailSent 
-          ? "Enter your email address below and we'll send you a secure login link to view your practice results."
-          : `Please enter the verification code sent to ${email}.`}
-      </p>
-      
-      <form onSubmit={isEmailSent ? handleVerificationSubmit : handleSubmit} className="space-y-6">
-        {!isEmailSent ? (
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError('');
-              }}
-              className={`w-full p-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
-              placeholder="Enter your work email"
-              disabled={isLoading || authLoading}
-              required
-            />
-          </div>
-        ) : (
-          <div>
-            <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-2">
-              Verification Code
-            </label>
-            <input
-              type="text"
-              id="verificationCode"
-              value={verificationCode}
-              onChange={(e) => {
-                setVerificationCode(e.target.value);
-                setError('');
-              }}
-              className={`w-full p-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
-              placeholder="Enter verification code"
-              disabled={isLoading || authLoading}
-              required
-            />
-          </div>
-        )}
-        
-        {error && (
-          <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-            {error}
-          </div>
-        )}
-        
-        <button
-          type="submit"
-          disabled={isLoading || authLoading}
-          className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-colors ${
-            isLoading || authLoading
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {isLoading || authLoading
-            ? 'Processing...'
-            : isEmailSent
-            ? 'Verify Code'
-            : 'Send Login Link'}
-        </button>
-        
-        {isEmailSent && (
-          <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-lg">
-            <p className="font-medium mb-2">Verification code sent!</p>
-            <p className="text-sm">
-              Please check your email for the verification code. If you don't see it, please check your spam folder.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setIsEmailSent(false);
-                setError('');
-              }}
-              className="text-blue-600 hover:text-blue-800 text-sm mt-2"
-            >
-              ← Back to email input
-            </button>
-          </div>
-        )}
-      </form>
-    </div>
-  );
-};
-
 const QofAnalysisTool = ({ isAuthenticated }) => {
   const { auth } = useAuth();
+  const memberstack = useMemberstack();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPractice, setSelectedPractice] = useState(null);
@@ -283,18 +552,35 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [cholPrevalence, setCholPrevalence] = useState(1);
   const [showPrevalence, setShowPrevalence] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState(false);
   const searchInputRef = React.useRef(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleViewResults = async () => {
     if (!isAuthenticated) {
-      setShowLoginForm(true);
+      // Show our custom modal instead of Memberstack's
+      setShowAuthModal(true);
       return;
     }
+    
+    // If already authenticated, show results directly
+    console.log("User already authenticated, showing results");
     setShowResults(true);
   };
+
+  // Handle successful login from modal
+  const handleLoginSuccess = () => {
+    // This will be handled by the auth state change effect
+    console.log("Login successful");
+  };
+
+  // Effect to update showResults when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated && selectedPractice) {
+      setShowResults(true);
+    }
+  }, [isAuthenticated, selectedPractice]);
 
   // Load data
   useEffect(() => {
@@ -927,7 +1213,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         </div>
       </div>
 
-      {selectedPractice && !showResults && !showLoginForm && (
+      {selectedPractice && !showResults && (
         <div className="bg-white p-6 rounded-lg shadow-lg mb-8 border border-[#D7D1CC]">
           <h2 className="text-2xl mb-4">{selectedPractice.PRACTICE_NAME}</h2>
           <div className="space-y-2 mb-6 details">
@@ -945,14 +1231,14 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         </div>
       )}
 
-      {showLoginForm && !showResults && (
-        <PasswordlessForm
-          onSuccess={() => {
-            setShowLoginForm(false);
-            setShowResults(true);
-          }}
-        />
-      )}
+      {/* Render the custom auth modal */}
+      <CustomAuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+        memberstack={memberstack}
+        selectedPractice={selectedPractice}
+      />
 
       {selectedPractice && showResults && isAuthenticated && (
         <div className="space-y-8">
