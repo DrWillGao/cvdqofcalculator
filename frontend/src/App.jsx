@@ -129,8 +129,8 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
         const storedData = JSON.parse(localStorage.getItem('signupData') || '{}');
         console.log('Using stored data for verification:', storedData);
         
-        // Complete signup with customFields
-        const signupResult = await memberstack.signupMemberPasswordless({
+        // Log the verification attempt details
+        console.log('Attempting verification with:', {
           passwordlessToken: verificationCode,
           email: formData.email,
           customFields: {
@@ -140,29 +140,65 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
             organisation: storedData.organisation || formData.organisation
           }
         });
-        
-        console.log('Signup completed with result:', signupResult);
+
+        try {
+          // Complete signup with customFields
+          const signupResult = await memberstack.signupMemberPasswordless({
+            passwordlessToken: verificationCode,
+            email: formData.email,
+            customFields: {
+              "first-name": storedData.firstName || formData.firstName,
+              "last-name": storedData.lastName || formData.lastName,
+              "job-title": storedData.jobTitle || formData.jobTitle,
+              organisation: storedData.organisation || formData.organisation
+            }
+          });
+          
+          console.log('Signup completed with result:', signupResult);
+        } catch (signupError) {
+          console.error('Signup error details:', signupError);
+          throw new Error(signupError.message || 'Error during signup verification');
+        }
         
         // After signup is complete, try to get the member data
-        const member = await memberstack.getMemberJSON();
-        console.log('Member data after signup:', member);
+        try {
+          const member = await memberstack.getMemberJSON();
+          console.log('Member data after signup:', member);
+        } catch (memberError) {
+          console.error('Error getting member data:', memberError);
+        }
         
         // Update custom fields explicitly after signup as a final attempt
-        await memberstack.updateMember({
-          customFields: {
-            "first-name": storedData.firstName || formData.firstName,
-            "last-name": storedData.lastName || formData.lastName,
-            "job-title": storedData.jobTitle || formData.jobTitle,
-            organisation: storedData.organisation || formData.organisation
-          }
-        });
-        
-        console.log('Custom fields updated after signup');
+        try {
+          await memberstack.updateMember({
+            customFields: {
+              "first-name": storedData.firstName || formData.firstName,
+              "last-name": storedData.lastName || formData.lastName,
+              "job-title": storedData.jobTitle || formData.jobTitle,
+              organisation: storedData.organisation || formData.organisation
+            }
+          });
+          console.log('Custom fields updated after signup');
+        } catch (updateError) {
+          console.error('Error updating custom fields:', updateError);
+        }
       } else {
-        await memberstack.loginMemberPasswordless({
+        // Log login verification attempt
+        console.log('Attempting login verification:', {
           passwordlessToken: verificationCode,
           email: loginEmail
         });
+
+        try {
+          const loginResult = await memberstack.loginMemberPasswordless({
+            passwordlessToken: verificationCode,
+            email: loginEmail
+          });
+          console.log('Login completed with result:', loginResult);
+        } catch (loginError) {
+          console.error('Login error details:', loginError);
+          throw new Error(loginError.message || 'Error during login verification');
+        }
       }
       
       // Clean up stored data
@@ -173,7 +209,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
       onClose();
     } catch (err) {
       console.error('Verification error:', err);
-      setError('Invalid verification code. Please try again.');
+      setError(err.message || 'Invalid verification code. Please try again.');
     } finally {
       setLoading(false);
     }
