@@ -471,48 +471,50 @@ const App = () => {
         return;
       }
       
-      // Use the maximum of various height measurements to ensure we capture all content
-      const height = Math.max(
-        document.documentElement.scrollHeight,
-        document.documentElement.offsetHeight,
-        document.body.scrollHeight,
-        document.body.offsetHeight
+      // Get the actual content height by measuring the main content element
+      const contentHeight = Math.ceil(
+        document.documentElement.getBoundingClientRect().height
       );
       
-      // Only send message if height has changed significantly (more than 5px)
-      if (Math.abs(height - previousHeight) > 5) {
+      // Only send message if height has changed significantly (more than 10px)
+      if (Math.abs(contentHeight - previousHeight) > 10) {
         try {
-          parent.postMessage(height, '*');
-          previousHeight = height;
+          // Send the exact content height without any buffer
+          parent.postMessage(contentHeight, '*');
+          previousHeight = contentHeight;
+          console.log("Sent new height:", contentHeight);
         } catch (e) {
           console.error("Error posting message to parent:", e);
         }
       }
     }
 
-    // Initial height check
-    sendHeight();
+    // Initial height check after a short delay to ensure content is rendered
+    setTimeout(sendHeight, 100);
 
-    // Set up observers for content changes
+    // Set up a ResizeObserver for the body
     const resizeObserver = new ResizeObserver(() => {
-      // Debounce the height calculation slightly to avoid too frequent updates
-      requestAnimationFrame(sendHeight);
+      // Use requestAnimationFrame to debounce and ensure accurate measurements
+      cancelAnimationFrame(window.rafId);
+      window.rafId = requestAnimationFrame(sendHeight);
     });
 
-    // Observe both body and documentElement for size changes
+    // Observe the body element
     resizeObserver.observe(document.body);
-    resizeObserver.observe(document.documentElement);
 
-    // Also listen for dynamic content changes
+    // Also observe any dynamic content changes
     const mutationObserver = new MutationObserver(() => {
-      requestAnimationFrame(sendHeight);
+      // Use requestAnimationFrame to debounce and ensure accurate measurements
+      cancelAnimationFrame(window.rafId);
+      window.rafId = requestAnimationFrame(sendHeight);
     });
 
     // Observe the entire document for content changes
     mutationObserver.observe(document.documentElement, {
       childList: true,
       subtree: true,
-      attributes: true
+      attributes: true,
+      characterData: true
     });
 
     // Clean up
@@ -523,6 +525,7 @@ const App = () => {
       if (mutationObserver) {
         mutationObserver.disconnect();
       }
+      cancelAnimationFrame(window.rafId);
     };
   }, [isLoggedIn]);
 
