@@ -72,7 +72,8 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
         plans: [{
           planId: "pln_free-trial-c8zqm9xj3",
           type: "DEFAULT"
-        }]
+        }],
+        pageName: "QOF Calculator"
       });
       
       console.log('Signup response:', response);
@@ -100,7 +101,8 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
       console.log('Sending login email to:', loginEmail);
       const response = await memberstack.sendMemberLoginPasswordlessEmail({
         email: loginEmail,
-        redirectUrl: `${window.location.origin}${window.location.pathname}`
+        redirectUrl: `${window.location.origin}${window.location.pathname}`,
+        pageName: "QOF Calculator"
       });
       
       console.log('Login email response:', response);
