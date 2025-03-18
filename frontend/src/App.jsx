@@ -225,7 +225,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
               {activeTab === 'signup' ? (
                 <>
                   <h2 className="text-2xl font-medium text-gray-900 mb-6">
-                    Sign up to access all our Webinars and Reports
+                    Sign up to view your results
                   </h2>
                   
                   <form onSubmit={handleSignup} className="space-y-4">
@@ -330,7 +330,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
               ) : (
                 <>
                   <h2 className="text-2xl font-medium text-gray-900 mb-6">
-                    Log in to your account
+                    Log in to view your results
                   </h2>
                   
                   <form onSubmit={handleLogin} className="space-y-4">
@@ -370,12 +370,12 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-medium text-gray-900 mb-6">
+              <h2 className="text-2xl font-medium text-gray-900 mb-2">
                 Verify your email
               </h2>
               
               <p className="text-gray-600 mb-4">
-                We've sent a verification code to your email. Please enter it below to continue.
+                We've sent a verification code to your email. If you don't see it, please check your junk folder.
               </p>
               
               <form onSubmit={handleVerification} className="space-y-4">
@@ -753,7 +753,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <p className="text-xs text-gray-600">23/24 Earnings</p>
+            <p className="text-xs text-gray-600">24/25 Earnings</p>
             <p className="font-bold text-blue-600 text-sm">{formatCurrency(indicator.earnings2324)}</p>
           </div>
           <div>
@@ -775,8 +775,8 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         {
           code: "CHOL003",
           name: "CHOL003: Statin Initiation",
-          achievement: selectedPractice['CHOL003 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 CHOL003'],
+          achievement: selectedPractice['CHOL003 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 CHOL003'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement_2'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes_2'],
           increasePerPercent: selectedPractice['Earnings increase per 1% prevalence CHOL003'] || 0
@@ -784,8 +784,8 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         {
           code: "CHOL004",
           name: "CHOL004: Lipid Optimisation",
-          achievement: selectedPractice['CHOL004 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 CHOL003_1'],
+          achievement: selectedPractice['CHOL004 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 CHOL003_1'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement_3'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes_3'],
           increasePerPercent: selectedPractice['Earnings increase per 1% prevalence CHOL004'] || 0
@@ -795,16 +795,16 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         {
           code: "HYP008",
           name: "HYP008: BP Control",
-          achievement: selectedPractice['HYP008 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 HYP008'],
+          achievement: selectedPractice['HYP008 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 HYP008'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes']
         },
         {
           code: "HYP009",
           name: "HYP009: BP Optimisation",
-          achievement: selectedPractice['HYP009 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 HYP008_1'],
+          achievement: selectedPractice['HYP009 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 HYP008_1'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement_1'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes_1']
         }
@@ -813,8 +813,8 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         {
           code: "DM033",
           name: "DM033: Diabetes Control",
-          achievement: selectedPractice['DM033 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 CHOL003_2'],
+          achievement: selectedPractice['DM033 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 CHOL003_2'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement_4'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes_4']
         }
@@ -823,16 +823,16 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         {
           code: "STIA14",
           name: "STIA14: Stroke/TIA BP Control",
-          achievement: selectedPractice['STIA14 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 CHOL003_3'],
+          achievement: selectedPractice['STIA14 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 CHOL003_3'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement_5'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes_5']
         },
         {
           code: "STIA15",
           name: "STIA15: Stroke/TIA BP Optimisation",
-          achievement: selectedPractice['STIA15 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 CHOL003_4'],
+          achievement: selectedPractice['STIA15 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 CHOL003_4'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement_6'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes_6']
         }
@@ -841,16 +841,16 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         {
           code: "CHD015",
           name: "CHD015: CHD BP Control",
-          achievement: selectedPractice['CHD015 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 CHOL003_5'],
+          achievement: selectedPractice['CHD015 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 CHOL003_5'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement_7'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes_7']
         },
         {
           code: "CHD016",
           name: "CHD016: CHD BP Optimisation",
-          achievement: selectedPractice['CHD016 2023/24 Achievement'],
-          earnings2324: selectedPractice['Earnings in 2023/24 CHOL003_6'],
+          achievement: selectedPractice['CHD016 2024/25 Achievement'],
+          earnings2324: selectedPractice['Earnings in 2024/25 CHOL003_6'],
           earnings2526: selectedPractice['Earnings in 2025/26 for same achievement_8'],
           potential: selectedPractice['Potential Earnings achievable if same outcomes_8']
         }
@@ -906,13 +906,13 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
 
       const comparisonData = [
         { 
-          name: 'Earnings in 2023/24', 
+          name: 'Earnings in 2024/25', 
           CHOL003: baseData.CHOL003.baseEarnings2023,
           CHOL004: baseData.CHOL004.baseEarnings2023,
           total: baseData.CHOL003.baseEarnings2023 + baseData.CHOL004.baseEarnings2023
         },
         { 
-          name: 'Estimated earnings with same 23/24 achievement levels', 
+          name: 'Estimated earnings with same 24/25 achievement levels', 
           CHOL003: baseData.CHOL003.baseEarnings2025,
           CHOL004: baseData.CHOL004.baseEarnings2025,
           total: baseData.CHOL003.baseEarnings2025 + baseData.CHOL004.baseEarnings2025
@@ -982,7 +982,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
               <div className="bg-[#f8f3f0] p-6 rounded-lg mb-6">
                 <h2 className="text-xl text-gray-800 mb-4">How the contract changes impact your CVD indicators</h2>
                 <div className="space-y-2">
-                  <p><span className="font-medium">Earnings 2023/24</span> = What your practice earned last year</p>
+                  <p><span className="font-medium">Earnings 2024/25</span> = What your practice earned last year</p>
                   <p><span className="font-medium">Earnings 2025/26</span> = What your practice will earn next year if you perform the same as last year</p>
                   <p><span className="font-medium">Full Target</span> = What you could earn next year if you hit the maximum thresholds</p>
                 </div>
@@ -1010,7 +1010,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                       <thead>
                         <tr className="border-b">
                           <th className="text-left py-2">INDICATOR</th>
-                          <th className="text-right py-2">23/24</th>
+                          <th className="text-right py-2">24/25</th>
                           <th className="text-right py-2">25/26</th>
                           <th className="text-right py-2">TARGET</th>
                           <th className="text-right py-2">1%</th>
@@ -1088,9 +1088,9 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       <div key={diseaseArea} className=" p-6 rounded-lg shadow-lg">
         <h2 className="text-xl text-gray-800 mb-4">{diseaseArea}</h2>
         
-        {/* 2023/24 Estimated Earnings */}
+        {/* 2024/25 Estimated Earnings */}
         <div className="mb-6">
-          <h3 className="text-sm text-gray-600 mb-1">2023/24 Estimated Earnings</h3>
+          <h3 className="text-sm text-gray-600 mb-1">2024/25 Estimated Earnings</h3>
           <p className="text-2xl font-bold text-blue-600">
             {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(totals.earnings2324)}
           </p>
@@ -1098,7 +1098,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
 
         {/* 2025/26 New Earnings */}
         <div className="mb-6">
-          <h3 className="text-sm text-gray-600 mb-1">2025/26 New Earnings with 23/24 achievement</h3>
+          <h3 className="text-sm text-gray-600 mb-1">2025/26 New Earnings with 24/25 achievement</h3>
           <p className="text-2xl font-bold text-green-600">
             {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(totals.earnings2526)}
           </p>
@@ -1174,7 +1174,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       <div className="bg-[#f8f3f0] p-6 rounded-lg shadow-lg mb-8">
         <h1 className="text-2xl text-black mb-4">2025/26 Cardiovascular QOF Indicator Analysis Tool</h1>
         <p className="text-black mb-4">
-          Please type in your Practice Name / ODS Code / Post code to reveal how the QOF 25/26 contract will impact your CVD indicators, and outline where there is room for opportunity
+          Please type in your Practice Name or ODS Code or Post code to reveal how the QOF 25/26 contract will impact your CVD indicators, and outline where there is room for opportunity
         </p>
         
         <div className="relative">
@@ -1184,7 +1184,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-            placeholder="Search by practice name, ODS code, or postcode..."
+            placeholder="Search by practice name or ODS code or postcode..."
             className="w-full p-4 rounded-lg border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
           />
           
