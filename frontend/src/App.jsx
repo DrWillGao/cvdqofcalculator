@@ -70,10 +70,9 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
           organisation: formData.organisation
         },
         plans: [{
-          planId: "pln_free-trial-c8zqm9xj3",
+          planId: "pln_qof-calculator-u18073m",
           type: "DEFAULT"
-        }],
-        pageName: "QOF Calculator"
+        }]
       });
       
       console.log('Signup response:', response);
@@ -101,8 +100,7 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
       console.log('Sending login email to:', loginEmail);
       const response = await memberstack.sendMemberLoginPasswordlessEmail({
         email: loginEmail,
-        redirectUrl: `${window.location.origin}${window.location.pathname}`,
-        pageName: "QOF Calculator"
+        redirectUrl: `${window.location.origin}${window.location.pathname}`
       });
       
       console.log('Login email response:', response);
@@ -153,7 +151,11 @@ const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selecte
               "last-name": storedData.lastName || formData.lastName,
               "job-title": storedData.jobTitle || formData.jobTitle,
               organisation: storedData.organisation || formData.organisation
-            }
+            },
+            plans: [{
+              planId: "pln_qof-calculator-u18073m",
+              type: "DEFAULT"
+            }]
           });
           
           console.log('Signup completed with result:', signupResult);
