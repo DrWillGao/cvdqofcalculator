@@ -3,588 +3,11 @@ import Papa from 'papaparse';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from './components/ui/slider';
 import FinancialAnalysis from './components/FinancialAnalysis';
-import { useAuth, useMemberstack } from "@memberstack/react";
-
-const CustomAuthModal = ({ isOpen, onClose, onLoginSuccess, memberstack, selectedPractice }) => {
-  const [activeTab, setActiveTab] = useState('signup'); // 'signup' or 'login'
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    jobTitle: '',
-    organisation: selectedPractice ? selectedPractice.PRACTICE_NAME : '',
-    email: ''
-  });
-  const [loginEmail, setLoginEmail] = useState('');
-  const [isEmailSent, setIsEmailSent] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-
-  useEffect(() => {
-    if (selectedPractice) {
-      setFormData(prev => ({
-        ...prev,
-        organisation: selectedPractice.PRACTICE_NAME
-      }));
-    }
-  }, [selectedPractice]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleLoginInputChange = (e) => {
-    setLoginEmail(e.target.value);
-  };
-
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.email || !formData.email.includes('@')) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      console.log('Signing up with data:', formData);
-      
-      // Store the form data in local state to use during verification
-      localStorage.setItem('signupData', JSON.stringify({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        jobTitle: formData.jobTitle,
-        organisation: formData.organisation
-      }));
-      
-      const response = await memberstack.sendMemberSignupPasswordlessEmail({
-        email: formData.email,
-        redirectUrl: `${window.location.origin}${window.location.pathname}`,
-        customFields: {
-          "first-name": formData.firstName,
-          "last-name": formData.lastName,
-          "job-title": formData.jobTitle,
-          organisation: formData.organisation
-        },
-        plans: [{
-          planId: "pln_qof-calculator-u18073m",
-          type: "DEFAULT"
-        }]
-      });
-      
-      console.log('Signup response:', response);
-      setIsEmailSent(true);
-    } catch (err) {
-      console.error('Signup error:', err);
-      setError(err.message || "Couldn't send verification email. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    
-    if (!loginEmail || !loginEmail.includes('@')) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      console.log('Sending login email to:', loginEmail);
-      const response = await memberstack.sendMemberLoginPasswordlessEmail({
-        email: loginEmail,
-        redirectUrl: `${window.location.origin}${window.location.pathname}`
-      });
-      
-      console.log('Login email response:', response);
-      setIsEmailSent(true);
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || "Couldn't send login email. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerification = async (e) => {
-    e.preventDefault();
-    if (!verificationCode) {
-      setError('Please enter the verification code');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      if (activeTab === 'signup') {
-        // Get stored signup data
-        const storedData = JSON.parse(localStorage.getItem('signupData') || '{}');
-        console.log('Using stored data for verification:', storedData);
-        
-        // Log the verification attempt details
-        console.log('Attempting verification with:', {
-          passwordlessToken: verificationCode,
-          email: formData.email,
-          customFields: {
-            "first-name": storedData.firstName || formData.firstName,
-            "last-name": storedData.lastName || formData.lastName,
-            "job-title": storedData.jobTitle || formData.jobTitle,
-            organisation: storedData.organisation || formData.organisation
-          }
-        });
-
-        try {
-          // Complete signup with customFields
-          const signupResult = await memberstack.signupMemberPasswordless({
-            passwordlessToken: verificationCode,
-            email: formData.email,
-            customFields: {
-              "first-name": storedData.firstName || formData.firstName,
-              "last-name": storedData.lastName || formData.lastName,
-              "job-title": storedData.jobTitle || formData.jobTitle,
-              organisation: storedData.organisation || formData.organisation
-            },
-            plans: [{
-              planId: "pln_qof-calculator-u18073m",
-              type: "DEFAULT"
-            }]
-          });
-          
-          console.log('Signup completed with result:', signupResult);
-        } catch (signupError) {
-          console.error('Signup error details:', signupError);
-          throw new Error(signupError.message || 'Error during signup verification');
-        }
-        
-        // After signup is complete, try to get the member data
-        try {
-          const member = await memberstack.getMemberJSON();
-          console.log('Member data after signup:', member);
-        } catch (memberError) {
-          console.error('Error getting member data:', memberError);
-        }
-        
-        // Update custom fields explicitly after signup as a final attempt
-        try {
-          await memberstack.updateMember({
-            customFields: {
-              "first-name": storedData.firstName || formData.firstName,
-              "last-name": storedData.lastName || formData.lastName,
-              "job-title": storedData.jobTitle || formData.jobTitle,
-              organisation: storedData.organisation || formData.organisation
-            }
-          });
-          console.log('Custom fields updated after signup');
-        } catch (updateError) {
-          console.error('Error updating custom fields:', updateError);
-        }
-      } else {
-        // Log login verification attempt
-        console.log('Attempting login verification:', {
-          passwordlessToken: verificationCode,
-          email: loginEmail
-        });
-
-        try {
-          const loginResult = await memberstack.loginMemberPasswordless({
-            passwordlessToken: verificationCode,
-            email: loginEmail
-          });
-          console.log('Login completed with result:', loginResult);
-        } catch (loginError) {
-          console.error('Login error details:', loginError);
-          throw new Error(loginError.message || 'Error during login verification');
-        }
-      }
-      
-      // Clean up stored data
-      localStorage.removeItem('signupData');
-      
-      console.log('Successfully authenticated');
-      if (onLoginSuccess) onLoginSuccess();
-      onClose();
-    } catch (err) {
-      console.error('Verification error:', err);
-      setError(err.message || 'Invalid verification code. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // If the modal is not open, don't render anything
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 relative overflow-hidden">
-        {/* Close button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        
-        {/* Tab navigation */}
-        <div className="flex border-b overflow-hidden">
-          <button
-            className={`flex-1 py-3 ${activeTab === 'signup' ? 'bg-white font-medium' : 'bg-gray-100'}`}
-            onClick={() => {
-              setActiveTab('signup');
-              setError('');
-              setIsEmailSent(false);
-            }}
-          >
-            Sign up
-          </button>
-          <button
-            className={`flex-1 py-3 ${activeTab === 'login' ? 'bg-white font-medium' : 'bg-gray-100'}`}
-            onClick={() => {
-              setActiveTab('login');
-              setError('');
-              setIsEmailSent(false);
-            }}
-          >
-            Log in
-          </button>
-        </div>
-        
-        <div className="p-6">
-          {!isEmailSent ? (
-            <>
-              {activeTab === 'signup' ? (
-                <>
-                  <h2 className="text-2xl font-medium text-gray-900 mb-6">
-                    Sign up to view your results
-                  </h2>
-                  
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                          First name
-                        </label>
-                        <input
-                          type="text"
-                          id="firstName"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleInputChange}
-                          className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Enter your first name"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                          Last name
-                        </label>
-                        <input
-                          type="text"
-                          id="lastName"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleInputChange}
-                          className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Enter your last name"
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-1">
-                        Job title
-                      </label>
-                      <input
-                        type="text"
-                        id="jobTitle"
-                        name="jobTitle"
-                        value={formData.jobTitle}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g Practice manager"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="organisation" className="block text-sm font-medium text-gray-700 mb-1">
-                        Organisation
-                      </label>
-                      <input
-                        type="text"
-                        id="organisation"
-                        name="organisation"
-                        value={formData.organisation}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="ICB, PCN, or Practice"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter your email"
-                        required
-                      />
-                    </div>
-                    
-                    {error && (
-                      <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-                        {error}
-                      </div>
-                    )}
-                    
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className={`w-full py-3 px-4 rounded-lg text-white font-medium ${
-                        loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
-                      } transition-colors`}
-                    >
-                      {loading ? 'Processing...' : 'Sign up'}
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <>
-                  <h2 className="text-2xl font-medium text-gray-900 mb-6">
-                    Log in to view your results
-                  </h2>
-                  
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                      <label htmlFor="loginEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        id="loginEmail"
-                        value={loginEmail}
-                        onChange={handleLoginInputChange}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter your email"
-                        required
-                      />
-                    </div>
-                    
-                    {error && (
-                      <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-                        {error}
-                      </div>
-                    )}
-                    
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className={`w-full py-3 px-4 rounded-lg text-white font-medium ${
-                        loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
-                      } transition-colors`}
-                    >
-                      {loading ? 'Processing...' : 'Log in'}
-                    </button>
-                  </form>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <h2 className="text-2xl font-medium text-gray-900 mb-2">
-                Verify your email
-              </h2>
-              
-              <p className="text-gray-600 mb-4">
-                We've sent a verification code to your email. If you don't see it, please check your junk folder.
-              </p>
-              
-              <form onSubmit={handleVerification} className="space-y-4">
-                <div>
-                  <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-1">
-                    Verification Code
-                  </label>
-                  <input
-                    type="text"
-                    id="verificationCode"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter verification code"
-                    required
-                  />
-                </div>
-                
-                {error && (
-                  <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-                    {error}
-                  </div>
-                )}
-                
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`w-full py-3 px-4 rounded-lg text-white font-medium ${
-                    loading ? 'bg-[#742400]' : 'bg-[#a43400] hover:bg-orange-700'
-                  } transition-colors`}
-                >
-                  {loading ? 'Verifying...' : 'Verify Code'}
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setIsEmailSent(false)}
-                  className="w-full text-blue-600 text-sm hover:underline rounded-lg py-2"
-                >
-                  ← Back to {activeTab === 'signup' ? 'sign up' : 'log in'}
-                </button>
-              </form>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+import GateModal from './components/GateModal';
+import { isUnlocked } from './hooks/useGate';
 
 const App = () => {
-  const { isLoggedIn, member } = useAuth();
-  const memberstack = useMemberstack();
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Initialize Memberstack
-  useEffect(() => {
-    // Check if Memberstack is available
-    if (memberstack) {
-      console.log("Memberstack initialized");
-      
-      // Just add a listener without expecting an unsubscribe function
-      try {
-        memberstack.onAuthChange(auth => {
-          console.log("Auth state changed:", auth);
-        });
-      } catch (e) {
-        console.error("Error setting up auth change listener:", e);
-      }
-    } else {
-      console.error("Memberstack not initialized properly");
-    }
-    
-    // No cleanup needed for this effect
-  }, [memberstack]);
-
-  useEffect(() => {
-    // Set loading to false once we have auth state
-    setIsLoading(false);
-    
-    // Debug auth state
-    console.log("Auth state in main component:", { isLoggedIn, member });
-
-    let previousHeight = 0;
-
-    // Function to send the height of the document to the parent iframe
-    function sendHeight() {
-      // Check if we're in an iframe before trying to communicate with parent
-      const isInIframe = window !== window.parent;
-      
-      if (!isInIframe) {
-        console.log("Not in iframe, skipping height message");
-        return;
-      }
-      
-      // Get the actual content height by measuring the main content element
-      const contentHeight = Math.ceil(
-        document.documentElement.getBoundingClientRect().height
-      );
-      
-      // Only send message if height has changed significantly (more than 10px)
-      if (Math.abs(contentHeight - previousHeight) > 10) {
-        try {
-          // Send the exact content height without any buffer
-          parent.postMessage(contentHeight, '*');
-          previousHeight = contentHeight;
-          console.log("Sent new height:", contentHeight);
-        } catch (e) {
-          console.error("Error posting message to parent:", e);
-        }
-      }
-    }
-
-    // Initial height check after a short delay to ensure content is rendered
-    setTimeout(sendHeight, 100);
-
-    // Set up a ResizeObserver for the body
-    const resizeObserver = new ResizeObserver(() => {
-      // Use requestAnimationFrame to debounce and ensure accurate measurements
-      cancelAnimationFrame(window.rafId);
-      window.rafId = requestAnimationFrame(sendHeight);
-    });
-
-    // Observe the body element
-    resizeObserver.observe(document.body);
-
-    // Also observe any dynamic content changes
-    const mutationObserver = new MutationObserver(() => {
-      // Use requestAnimationFrame to debounce and ensure accurate measurements
-      cancelAnimationFrame(window.rafId);
-      window.rafId = requestAnimationFrame(sendHeight);
-    });
-
-    // Observe the entire document for content changes
-    mutationObserver.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      characterData: true
-    });
-
-    // Clean up
-    return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      if (mutationObserver) {
-        mutationObserver.disconnect();
-      }
-      cancelAnimationFrame(window.rafId);
-    };
-  }, [isLoggedIn]);
-
-  // Monitor authentication changes
-  useEffect(() => {
-    console.log("Authentication state changed:", { isLoggedIn });
-    if (isLoggedIn) {
-      console.log("User is authenticated:", member);
-    }
-  }, [isLoggedIn, member]);
-
-  return (
-    <QofAnalysisTool isAuthenticated={isLoggedIn} />
-  );
-};
-
-const QofAnalysisTool = ({ isAuthenticated }) => {
-  const { auth } = useAuth();
-  const memberstack = useMemberstack();
+  const [isAuthenticated, setIsAuthenticated] = useState(() => isUnlocked());
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPractice, setSelectedPractice] = useState(null);
@@ -598,75 +21,93 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
   const searchInputRef = React.useRef(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showGateModal, setShowGateModal] = useState(false);
 
-  const handleViewResults = async () => {
-    if (!isAuthenticated) {
-      // Show our custom modal instead of Memberstack's
-      setShowAuthModal(true);
-      return;
-    }
-    
-    // If already authenticated, show results directly
-    console.log("User already authenticated, showing results");
-    setShowResults(true);
-  };
-
-  // Handle successful login from modal
-  const handleLoginSuccess = () => {
-    // This will be handled by the auth state change effect
-    console.log("Login successful");
-  };
-
-  // Effect to update showResults when authentication state changes
   useEffect(() => {
     if (isAuthenticated && selectedPractice) {
       setShowResults(true);
     }
   }, [isAuthenticated, selectedPractice]);
 
+  // Iframe height sync
+  useEffect(() => {
+    let previousHeight = 0;
+    let rafId;
+
+    function sendHeight() {
+      const isInIframe = window !== window.parent;
+      if (!isInIframe) return;
+
+      const contentHeight = Math.ceil(
+        document.documentElement.getBoundingClientRect().height
+      );
+
+      if (Math.abs(contentHeight - previousHeight) > 10) {
+        try {
+          parent.postMessage(contentHeight, '*');
+          previousHeight = contentHeight;
+        } catch { /* ignore */ }
+      }
+    }
+
+    setTimeout(sendHeight, 100);
+
+    const resizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(sendHeight);
+    });
+    resizeObserver.observe(document.body);
+
+    const mutationObserver = new MutationObserver(() => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(sendHeight);
+    });
+    mutationObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true
+    });
+
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   // Load data
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        console.log('Fetching CSV data...');
         const response = await fetch('/data/qof_data.csv');
-        
+
         if (!response.ok) {
-          console.error('Failed to fetch CSV:', response.status, response.statusText);
           throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
         }
-        
+
         const text = await response.text();
-        console.log('CSV data received, first 100 chars:', text.substring(0, 100));
-        
+
         Papa.parse(text, {
           header: true,
           dynamicTyping: true,
           skipEmptyLines: true,
           complete: (results) => {
             if (results.data && results.data.length > 0) {
-              console.log('CSV parsing complete');
-              console.log('First row of data:', results.data[0]);
-              console.log('Number of rows:', results.data.length);
-              console.log('Available columns:', Object.keys(results.data[0]));
               setPracticeData(results.data);
             } else {
-              console.error('No data found in CSV file');
               setError('No data found in CSV file');
             }
             setIsLoading(false);
           },
-          error: (error) => {
-            console.error('CSV parsing error:', error);
-            setError(`Error parsing CSV: ${error.message}`);
+          error: (parseError) => {
+            setError(`Error parsing CSV: ${parseError.message}`);
             setIsLoading(false);
           }
         });
-      } catch (error) {
-        console.error('Data loading error:', error);
-        setError(`Error loading data: ${error.message}`);
+      } catch (loadError) {
+        setError(`Error loading data: ${loadError.message}`);
         setIsLoading(false);
       }
     };
@@ -682,54 +123,38 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       return;
     }
 
-    console.log('Searching for:', searchTerm);
-    console.log('Available practice data:', practiceData);
-
     const lowerSearchTerm = searchTerm.toLowerCase();
     const filtered = practiceData.filter(practice => {
       const practiceCode = practice.PRACTICE_CODE ? practice.PRACTICE_CODE.toString().toLowerCase() : '';
       const postCode = practice.POST_CODE ? practice.POST_CODE.toString().toLowerCase() : '';
       const practiceName = practice.PRACTICE_NAME ? practice.PRACTICE_NAME.toString().toLowerCase() : '';
-      
-      const match = practiceCode.includes(lowerSearchTerm) ||
-                   postCode.includes(lowerSearchTerm) ||
-                   practiceName.includes(lowerSearchTerm);
-      
-      if (match) {
-        console.log('Found matching practice:', practice);
-      }
-      
-      return match;
+
+      return practiceCode.includes(lowerSearchTerm) ||
+             postCode.includes(lowerSearchTerm) ||
+             practiceName.includes(lowerSearchTerm);
     });
-    
-    console.log('Search results:', filtered);
+
     setSearchResults(filtered.slice(0, 10));
     setShowDropdown(filtered.length > 0);
   }, [searchTerm, practiceData]);
 
-  // Prepare prevalence data for chart
   const getPrevalenceData = (practice) => {
     if (!practice) return [];
-    
+
     const cleanPercentage = (value) => {
       if (!value && value !== 0) return 0;
-    if (typeof value === 'string') {
+      if (typeof value === 'string') {
         return parseFloat(value.replace('%', '')) || 0;
       }
       return value || 0;
     };
 
-    // Log all available keys for debugging
-    console.log('All available keys:', Object.keys(practice));
-    console.log('Raw practice data:', practice);
-
-    // Create data with exact column names (note the trailing spaces where needed)
-    const data = [
+    return [
       {
         name: 'Cholesterol',
         Practice: cleanPercentage(practice['CHOL Prevalence']),
-        SubICB: cleanPercentage(practice['SUB ICB CHOL Prevalence ']), // Note the trailing space
-        National: cleanPercentage(practice['National CHOL Prevalence ']) // Note the trailing space
+        SubICB: cleanPercentage(practice['SUB ICB CHOL Prevalence ']),
+        National: cleanPercentage(practice['National CHOL Prevalence '])
       },
       {
         name: 'Hypertension',
@@ -740,37 +165,22 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       {
         name: 'Diabetes',
         Practice: cleanPercentage(practice['DM Prevalence']),
-        SubICB: cleanPercentage(practice['SUB ICB DM Prevalence ']), // Note the trailing space
-        National: cleanPercentage(practice['National DM Prevalence ']) // Note the trailing space
+        SubICB: cleanPercentage(practice['SUB ICB DM Prevalence ']),
+        National: cleanPercentage(practice['National DM Prevalence '])
       },
       {
         name: 'Stroke/TIA',
         Practice: cleanPercentage(practice['STIA Prevalence']),
-        SubICB: cleanPercentage(practice['SUB ICB STIA Prevalence ']), // Note the trailing space
-        National: cleanPercentage(practice['National STIA Prevalence ']) // Note the trailing space
+        SubICB: cleanPercentage(practice['SUB ICB STIA Prevalence ']),
+        National: cleanPercentage(practice['National STIA Prevalence '])
       },
       {
         name: 'Coronary Heart Disease',
         Practice: cleanPercentage(practice['CHD Prevalence']),
-        SubICB: cleanPercentage(practice['SUB ICB CHD Prevalence ']), // Note the trailing space
-        National: cleanPercentage(practice['National CHD Prevalence ']) // Note the trailing space
+        SubICB: cleanPercentage(practice['SUB ICB CHD Prevalence ']),
+        National: cleanPercentage(practice['National CHD Prevalence '])
       }
     ];
-
-    // Log each indicator's values for verification
-    data.forEach(item => {
-      console.log(`${item.name} processed values:`, {
-        Practice: item.Practice,
-        SubICB: item.SubICB,
-        National: item.National
-      });
-    });
-
-    return data;
-  };
-
-  const formatPercent = (value) => {
-    return `${value.toFixed(1)}%`;
   };
 
   const formatCurrency = (value) => {
@@ -788,8 +198,8 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         <div className="mb-3">
           <p className="text-sm text-gray-600">Achievement: {indicator.achievement ? `${indicator.achievement}%` : 'N/A'}</p>
           <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
+            <div
+              className="bg-blue-600 h-2.5 rounded-full"
               style={{ width: `${indicator.achievement || 0}%` }}
             ></div>
           </div>
@@ -900,26 +310,19 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       ]
     };
 
-    const calculateTotalEarnings = (indicators) => {
-      const totals = {
-        earnings2324: 0,
-        earnings2526: 0,
-        potential: 0
-      };
-
-      indicators.forEach(ind => {
+    const calculateTotalEarnings = (inds) => {
+      const totals = { earnings2324: 0, earnings2526: 0, potential: 0 };
+      inds.forEach(ind => {
         const clean = (val) => {
           if (typeof val === 'string' && val.startsWith('£')) {
             return parseFloat(val.replace('£', '').replace(/,/g, '')) || 0;
           }
           return val || 0;
         };
-
         totals.earnings2324 += clean(ind.earnings2324);
         totals.earnings2526 += clean(ind.earnings2526);
         totals.potential += clean(ind.potential);
       });
-
       return totals;
     };
 
@@ -948,20 +351,20 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       const combinedEarnings = currentEarnings.CHOL003 + currentEarnings.CHOL004;
 
       const comparisonData = [
-        { 
-          name: 'Earnings in 2024/25', 
+        {
+          name: 'Earnings in 2024/25',
           CHOL003: baseData.CHOL003.baseEarnings2023,
           CHOL004: baseData.CHOL004.baseEarnings2023,
           total: baseData.CHOL003.baseEarnings2023 + baseData.CHOL004.baseEarnings2023
         },
-        { 
-          name: 'Estimated earnings with same 24/25 achievement levels', 
+        {
+          name: 'Estimated earnings with same 24/25 achievement levels',
           CHOL003: baseData.CHOL003.baseEarnings2025,
           CHOL004: baseData.CHOL004.baseEarnings2025,
           total: baseData.CHOL003.baseEarnings2025 + baseData.CHOL004.baseEarnings2025
         },
-        { 
-          name: 'Increased earnings with max achievement & enhanced prevalence', 
+        {
+          name: 'Increased earnings with max achievement & enhanced prevalence',
           CHOL003: currentEarnings.CHOL003,
           CHOL004: currentEarnings.CHOL004,
           total: combinedEarnings
@@ -969,30 +372,30 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
       ];
 
       const detailedTableData = [
-        { 
-          label: 'CHOL003', 
+        {
+          label: 'CHOL003',
           earnings2023: baseData.CHOL003.baseEarnings2023,
           earnings2025Base: baseData.CHOL003.baseEarnings2025,
           earningsWithPrevalence: currentEarnings.CHOL003,
           percentIncrease2023to2025: ((baseData.CHOL003.baseEarnings2025 / baseData.CHOL003.baseEarnings2023) - 1) * 100,
           percentIncreaseWithPrevalence: ((currentEarnings.CHOL003 / baseData.CHOL003.baseEarnings2025) - 1) * 100
         },
-        { 
-          label: 'CHOL004', 
+        {
+          label: 'CHOL004',
           earnings2023: baseData.CHOL004.baseEarnings2023,
           earnings2025Base: baseData.CHOL004.baseEarnings2025,
           earningsWithPrevalence: currentEarnings.CHOL004,
           percentIncrease2023to2025: ((baseData.CHOL004.baseEarnings2025 / baseData.CHOL004.baseEarnings2023) - 1) * 100,
           percentIncreaseWithPrevalence: ((currentEarnings.CHOL004 / baseData.CHOL004.baseEarnings2025) - 1) * 100
         },
-        { 
-          label: 'Combined', 
+        {
+          label: 'Combined',
           earnings2023: baseData.CHOL003.baseEarnings2023 + baseData.CHOL004.baseEarnings2023,
           earnings2025Base: baseData.CHOL003.baseEarnings2025 + baseData.CHOL004.baseEarnings2025,
           earningsWithPrevalence: combinedEarnings,
-          percentIncrease2023to2025: (((baseData.CHOL003.baseEarnings2025 + baseData.CHOL004.baseEarnings2025) / 
+          percentIncrease2023to2025: (((baseData.CHOL003.baseEarnings2025 + baseData.CHOL004.baseEarnings2025) /
                                     (baseData.CHOL003.baseEarnings2023 + baseData.CHOL004.baseEarnings2023)) - 1) * 100,
-          percentIncreaseWithPrevalence: ((combinedEarnings / 
+          percentIncreaseWithPrevalence: ((combinedEarnings /
                                         (baseData.CHOL003.baseEarnings2025 + baseData.CHOL004.baseEarnings2025)) - 1) * 100
         }
       ];
@@ -1087,8 +490,8 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                     }
                   }}
                   className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
-                    showPrevalence 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    showPrevalence
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
@@ -1130,8 +533,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
     return (
       <div key={diseaseArea} className=" p-6 rounded-lg shadow-lg">
         <h2 className="text-xl text-gray-800 mb-4">{diseaseArea}</h2>
-        
-        {/* 2024/25 Estimated Earnings */}
+
         <div className="mb-6">
           <h3 className="text-sm text-gray-600 mb-1">2024/25 Estimated Earnings</h3>
           <p className="text-2xl font-bold text-blue-600">
@@ -1139,7 +541,6 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
           </p>
         </div>
 
-        {/* 2025/26 New Earnings */}
         <div className="mb-6">
           <h3 className="text-sm text-gray-600 mb-1">2025/26 New Earnings with 24/25 achievement</h3>
           <p className="text-2xl font-bold text-green-600">
@@ -1147,7 +548,6 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
           </p>
         </div>
 
-        {/* 2025/26 Total Earnings */}
         <div className="mb-6">
           <h3 className="text-sm text-gray-600 mb-1">2025/26 Total Earnings with full target achievement</h3>
           <p className="text-2xl font-bold text-purple-600">
@@ -1155,7 +555,6 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
           </p>
         </div>
 
-        {/* Prevalence Scale */}
       <div className="mb-6">
           <h3 className="text-sm text-gray-600 mb-2">2025/26 Total Earnings if 1-3% increase in disease prevalence</h3>
           <div className="relative pt-1">
@@ -1184,7 +583,6 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
           </div>
         </div>
 
-        {/* Individual Indicators */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
           {indicators[diseaseArea].map(renderIndicatorCard)}
         </div>
@@ -1219,7 +617,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         <p className="text-black mb-4">
           Please type in your Practice Name or ODS Code or Post code to reveal how the QOF 25/26 contract will impact your CVD indicators, and outline where there is room for opportunity
         </p>
-        
+
         <div className="relative">
           <input
             ref={searchInputRef}
@@ -1230,7 +628,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
             placeholder="Search by practice name or ODS code or postcode..."
             className="w-full p-4 rounded-lg border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
           />
-          
+
           {showDropdown && (
             <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg max-h-80 overflow-y-auto">
               {searchResults.map((practice) => (
@@ -1241,7 +639,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                     setSelectedPractice(practice);
                     setSearchTerm(practice.PRACTICE_NAME);
                     setShowDropdown(false);
-                    setShowResults(false); // Reset results view when new practice is selected
+                    setShowResults(false);
                     searchInputRef.current?.blur();
                   }}
                 >
@@ -1266,7 +664,13 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
             <p className="text-gray-600">List Size: {selectedPractice['Practice List Size']?.toLocaleString()}</p>
           </div>
           <button
-            onClick={handleViewResults}
+            onClick={() => {
+              if (isAuthenticated) {
+                setShowResults(true);
+              } else {
+                setShowGateModal(true);
+              }
+            }}
             className="bg-blue-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-blue-700 transition-colors w-full sm:w-auto"
           >
             View your practice results now!
@@ -1274,19 +678,20 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
         </div>
       )}
 
-      {/* Render the custom auth modal */}
-      <CustomAuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)}
-        onLoginSuccess={handleLoginSuccess}
-        memberstack={memberstack}
+      <GateModal
+        isOpen={showGateModal}
+        onClose={() => setShowGateModal(false)}
+        onUnlock={() => {
+          setIsAuthenticated(true);
+          setShowResults(true);
+        }}
         selectedPractice={selectedPractice}
       />
 
       {selectedPractice && showResults && isAuthenticated && (
         <div className="space-y-8">
           {/* Practice Details */}
-          <div className="bg-white p-6 rounded-lg shadow-lg mb-8 bg-white border border-[#D7D1CC]">
+          <div className="bg-white p-6 rounded-lg shadow-lg mb-8 border border-[#D7D1CC]">
             <h2 className="text-2xl mb-4">{selectedPractice.PRACTICE_NAME}</h2>
             <div className="space-y-2 mb-6 details">
               <p className="text-gray-600">Practice Code: {selectedPractice.PRACTICE_CODE}</p>
@@ -1295,7 +700,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
               <p className="text-gray-600">List Size: {selectedPractice['Practice List Size']}</p>
             </div>
           </div>
-          
+
           {/* Disease Prevalence and Chart Section */}
           <div className="bg-white p-6 rounded-lg border border-[#D7D1CC]">
             <div className="flex-1">
@@ -1306,54 +711,29 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="name" 
-                    angle={0}
-                    height={50}
-                  />
-                  <YAxis 
+                  <XAxis dataKey="name" angle={0} height={50} />
+                  <YAxis
                     tickFormatter={(value) => `${value}%`}
                     label={{ value: 'Prevalence %', angle: -90, position: 'insideLeft', offset: 0 }}
                     domain={[0, 16]}
                   />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value) => [`${value.toFixed(1)}%`, 'Prevalence']}
                     labelStyle={{ fontWeight: 'bold' }}
                   />
-                  <Legend 
-                    verticalAlign="top" 
-                    height={36}
-                  />
-                  <Bar 
-                    dataKey="Practice" 
-                    name="Your Practice" 
-                    fill="#7e22ce"
-                    radius={[4, 4, 0, 0]}
-                    barSize={35}
-                  />
-                  <Bar
-                    dataKey="SubICB" 
-                    name="Sub Icb Average" 
-                    fill="#1d4ed8"
-                    radius={[4, 4, 0, 0]}
-                    barSize={35}
-                  />
-                  <Bar 
-                    dataKey="National" 
-                    name="National Average" 
-                    fill="#047857"
-                    radius={[4, 4, 0, 0]}
-                    barSize={35}
-                  />
+                  <Legend verticalAlign="top" height={36} />
+                  <Bar dataKey="Practice" name="Your Practice" fill="#7e22ce" radius={[4, 4, 0, 0]} barSize={35} />
+                  <Bar dataKey="SubICB" name="Sub Icb Average" fill="#1d4ed8" radius={[4, 4, 0, 0]} barSize={35} />
+                  <Bar dataKey="National" name="National Average" fill="#047857" radius={[4, 4, 0, 0]} barSize={35} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
-          
+
           {/* Financial Analysis */}
           <FinancialAnalysis selectedPractice={selectedPractice} />
-            
-            {/* Call to Action */}
+
+          {/* Call to Action */}
           <div className="bg-[#f8f3f0] text-black p-6 rounded-lg shadow-lg border border-[#D7D1CC]">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
               <div className="md:col-span-2">
@@ -1363,7 +743,7 @@ const QofAnalysisTool = ({ isAuthenticated }) => {
                 </p>
               </div>
               <div className="flex flex-col gap-4 items-center justify-end md:col-span-1">
-                <button 
+                <button
                   onClick={() => window.location.href = 'mailto:sales@suvera.co.uk'}
                   className="w-full bg-[#a43400] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#a43400] transition-colors"
                 >
