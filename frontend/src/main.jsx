@@ -1,10 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { MemberstackProvider } from '@memberstack/react';
 import App from './App';
+import { identifyOnLoad } from './hooks/useGate';
 import './index.css';
 
-// Add error boundary for development
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -33,7 +32,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Ensure the root element exists
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   const root = document.createElement('div');
@@ -41,15 +39,12 @@ if (!rootElement) {
   document.body.appendChild(root);
 }
 
-// Mount the React application
+identifyOnLoad();
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <MemberstackProvider config={{
-        publicKey: "pk_ee6f53213efb037d10aa",
-      }}>
-        <App />
-      </MemberstackProvider>
+      <App />
     </ErrorBoundary>
   </React.StrictMode>
-); 
+);
